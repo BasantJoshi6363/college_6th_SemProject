@@ -1,0 +1,49 @@
+# =========================
+# Root / General
+# =========================
+node_modules/
+.env
+.env.*
+
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+# =========================
+# Backend (Node / Express)
+# =========================
+server/node_modules/
+server/.env
+server/dist/
+server/build/
+server/coverage/
+server/uploads/
+server/data/
+
+
+# =========================
+# Frontend (React / Vite / Next)
+# =========================
+client/node_modules/
+client/.env
+client/.env.*
+client/dist/
+client/build/
+client/.next/
+client/out/
+client/.vite/
+client/coverage/
+
+# Hosting
+client/.vercel/
+client/.netlify/
