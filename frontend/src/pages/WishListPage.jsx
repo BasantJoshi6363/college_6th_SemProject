@@ -1,4 +1,5 @@
 import React from 'react';
+import ProductCard from '../components/ProductCard';
 
 const WishlistPage = ({ wishlistItems, recommendedItems }) => {
   return (
@@ -13,9 +14,12 @@ const WishlistPage = ({ wishlistItems, recommendedItems }) => {
 
       {/* Wishlist Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
-        {wishlistItems.map((item) => (
-          <WishlistCard key={item.id} product={item} />
+        {wishlistItems.length === 0 ?  <div className="text-center py-20 text-gray-500">
+          Your Wish List is currently empty.
+        </div> :wishlistItems.map((item) => (
+          <ProductCard key={item.id} product={item} />
         ))}
+      
       </div>
 
       {/* Just For You Section */}
@@ -30,11 +34,14 @@ const WishlistPage = ({ wishlistItems, recommendedItems }) => {
       </div>
 
       {/* Recommendations Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {recommendedItems.map((item) => (
-          <WishlistCard key={item.id} product={item} isRecommendation={true} />
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {recommendedItems.length === 0 ?  <div className="text-center py-20 text-gray-500">
+          No recommendations available.
+        </div> :recommendedItems.map((item) => (
+          <ProductCard key={item.id} product={item} isRecommendation={true} />
         ))}
-      </div>
+        
+      </div> */}
     </div>
   );
 };
