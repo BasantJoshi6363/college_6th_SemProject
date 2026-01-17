@@ -13,23 +13,25 @@ export const AuthProvider = ({ children }) => {
 
   const navigate = useNavigate();
 
+  // Load auth state from localStorage once on mount
   useEffect(() => {
     const storedToken = localStorage.getItem("google-token");
     const storedUser = localStorage.getItem("user");
 
     if (storedToken && storedUser) {
-      setToken(storedToken);
       try {
+        setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch (e) {
-        console.error("Failed to parse user data");
+        console.error("Failed to parse user data", e);
+        localStorage.clear(); // Clear corrupt data
       }
     }
     setLoading(false);
   }, []);
 
-  // Helper to sanitize user data before saving
-  const saveAuthData = (userData, tokenData) => {
+  // Helper to sanitize and save data
+  const saveAuthData = useCallback((userData, tokenData) => {
     const sanitizedUser = {
       _id: userData._id,
       name: userData.name,
@@ -38,21 +40,19 @@ export const AuthProvider = ({ children }) => {
     };
 
     setUser(sanitizedUser);
-    setToken(tokenData);
-
-    localStorage.setItem("google-token", tokenData);
+    if (tokenData) {
+        setToken(tokenData);
+        localStorage.setItem("google-token", tokenData);
+    }
     localStorage.setItem("user", JSON.stringify(sanitizedUser));
-  };
+  }, []);
 
   // LOGIN
   const login = useCallback(async (email, password) => {
     const toastId = toast.loading("Logging in...");
     try {
       const { data } = await axios.post(`${baseUrl}/login`, { email, password });
-
-      // Only save specific fields, ignoring password
       saveAuthData(data.user, data.token);
-
       toast.success(`Welcome back, ${data.user.name}!`, { id: toastId });
       navigate("/");
       return data;
@@ -61,21 +61,14 @@ export const AuthProvider = ({ children }) => {
       toast.error(message, { id: toastId });
       return null;
     }
-  }, [navigate]);
+  }, [navigate, saveAuthData]);
 
   // REGISTER
   const register = useCallback(async (name, email, password) => {
     const toastId = toast.loading("Creating account...");
     try {
-      const { data } = await axios.post(`${baseUrl}/register`, {
-        name,
-        email,
-        password,
-      });
-
-      // Only save specific fields, ignoring password
+      const { data } = await axios.post(`${baseUrl}/register`, { name, email, password });
       saveAuthData(data.user, data.token);
-
       toast.success("Account created successfully!", { id: toastId });
       navigate("/");
       return data;
@@ -84,7 +77,27 @@ export const AuthProvider = ({ children }) => {
       toast.error(message, { id: toastId });
       return null;
     }
-  }, [navigate]);
+  }, [navigate, saveAuthData]);
+
+  // UPDATE PROFILE
+  const updateProfile = useCallback(async (updateData) => {
+    const toastId = toast.loading("Updating profile...");
+    try {
+      const { data } = await axios.put(`${baseUrl}/update`, updateData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update state and local storage
+      saveAuthData(data.user); // reuse the helper, keep current token
+      
+      toast.success("Profile updated successfully!", { id: toastId });
+      return true;
+    } catch (error) {
+      const message = error.response?.data?.message || "Update failed";
+      toast.error(message, { id: toastId });
+      return false;
+    }
+  }, [token, saveAuthData]);
 
   // LOGOUT
   const logout = useCallback(() => {
@@ -96,45 +109,18 @@ export const AuthProvider = ({ children }) => {
     navigate("/signup");
   }, [navigate]);
 
-  // Inside AuthProvider ...
-
-  const updateProfile = useCallback(async (updateData) => {
-    const toastId = toast.loading("Updating profile...");
-    try {
-      const { data } = await axios.put(`${baseUrl}/update`, updateData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      console.log(data)
-      // Update state and localStorage with new user data (excluding sensitive info)
-      const sanitizedUser = {
-        _id: data.user._id,
-        name: data.user.name,
-        email: data.user.email,
-        picture: data.picture || ""
-      };
-
-      setUser(sanitizedUser);
-      localStorage.setItem("user", JSON.stringify(sanitizedUser));
-
-      toast.success("Profile updated successfully!", { id: toastId });
-      return true;
-    } catch (error) {
-      const message = error.response?.data?.message || "Update failed";
-      toast.error(message, { id: toastId });
-      return false;
-    }
-  }, [token, baseUrl]);
-
   const isAuthenticated = !!token;
 
-
-
   const value = useMemo(() => ({
-    user, token, loading, isAuthenticated, login, register, logout, updateProfile
+    user, 
+    token, 
+    loading, 
+    isAuthenticated, 
+    login, 
+    register, 
+    logout, 
+    updateProfile
   }), [user, token, loading, isAuthenticated, login, register, logout, updateProfile]);
-
-
-
 
   return (
     <AuthContext.Provider value={value}>
