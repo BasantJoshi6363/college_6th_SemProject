@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import FlashSale from '../components/FlashSale'
 import axios from 'axios';
 import CategoryCard from '../components/CategoryCard';
@@ -6,41 +6,27 @@ import CategorySection from '../components/CategorySection';
 import ExploreProducts from '../components/ExploreOurProduct';
 import BestSellingProduct from '../components/BestSellingProducts';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { ProductContext } from '../context/ProductContext';
 
 const Home = () => {
-    const [result,setResult] = useState([]);
-    const [loading,setLoading] = useState(false);
-    const fetchProduct = async ()=>{
-        setLoading(true);
-        try {
-            const response = await axios.get("https://dummyjson.com/products?limit=4");
-            setResult(response.data.products);
-            setLoading(false)
-        } catch (error) {
-            setLoading(false);
-            console.log(error)
-        }
-    }
-    useEffect(()=>{
-        fetchProduct();
-    },[]);
 
+    const { loading, dummyProducts } = (useContext(ProductContext));
     if (loading) {
-    return (
-      <LoadingSpinner/>
+        return (
+            <LoadingSpinner />
 
-    );
-  }
+        );
+    }
 
     // if(loading && <><h1>Loading...</h1></>)
-  return (
-    <div>
-        <FlashSale products={result}/>
-        <CategorySection/>
-        <ExploreProducts products={result}/>
-        <BestSellingProduct products={result}/>
-    </div>
-  )
+    return (
+        <div>
+            <FlashSale products={dummyProducts} />
+            <CategorySection />
+            <ExploreProducts products={dummyProducts} />
+            <BestSellingProduct products={dummyProducts} />
+        </div>
+    )
 }
 
 export default Home
