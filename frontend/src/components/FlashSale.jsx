@@ -1,9 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useContext, useRef } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import ProductCard from './ProductCard';
+import { CartContext } from '../context/CartContext';
 
 const FlashSale = ({ products }) => {
   const scrollRef = useRef(null);
+  const {addToCart,removeFromCart} = useContext(CartContext);
 
   const scroll = (direction) => {
     if (scrollRef.current) {
