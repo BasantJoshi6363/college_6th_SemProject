@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { Minus, Plus, Heart, Truck, RefreshCcw } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams } from 'react-router-dom';
+import { Minus, Plus, Heart, Truck, RefreshCcw, Star } from 'lucide-react';
+import { CartContext } from '../context/CartContext';
+import { WishlistContext } from '../context/WishListContext';
 
-// Reusable Size Button
+// Reusable Components (Keep these as they are great for UI)
 const SizeButton = ({ size, isSelected, onClick }) => (
   <button
     onClick={onClick}
@@ -15,7 +18,6 @@ const SizeButton = ({ size, isSelected, onClick }) => (
   </button>
 );
 
-// Delivery Info Card
 const DeliveryInfo = ({ icon: Icon, title, linkText, description }) => (
   <div className="flex items-center gap-4 border border-black/30 p-4 first:rounded-t last:rounded-b last:border-t-0">
     <Icon size={32} />
@@ -28,53 +30,95 @@ const DeliveryInfo = ({ icon: Icon, title, linkText, description }) => (
 );
 
 const ProductDetailsPage = () => {
+  const { id } = useParams(); // Get ID from URL
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [mainImage, setMainImage] = useState('');
   const [selectedSize, setSelectedSize] = useState('M');
-  const [quantity, setQuantity] = useState(2);
+  const [quantity, setQuantity] = useState(1);
+
+  // Contexts
+  const { addToCart } = useContext(CartContext);
+  const { wishlistItems, addToWishlist, removeFromWishlist } = useContext(WishlistContext);
+
+  useEffect(() => {
+    const getProduct = async () => {
+      try {
+        const res = await fetch(`https://dummyjson.com/products/${id}`);
+        const data = await res.json();
+        setProduct(data);
+        setMainImage(data.images[0]); // Set first image as default
+      } catch (err) {
+        console.error("Failed to fetch product", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getProduct();
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  if (loading) return <div className="h-screen flex items-center justify-center font-bold">Loading Product...</div>;
+  if (!product) return <div className="h-screen flex items-center justify-center">Product not found.</div>;
+
+  const isInWishlist = wishlistItems.some(item => item.id === product.id);
+
+  const handleBuyNow = () => {
+    // We add to cart 'quantity' times
+    for (let i = 0; i < quantity; i++) {
+      addToCart(product);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-20">
-      {/* Breadcrumb */}
-      <div className="mb-20 text-sm text-gray-500">
+      {/* Dynamic Breadcrumb */}
+      <div className="mb-20 text-sm text-gray-500 capitalize">
         <span>Account</span> <span className="mx-2">/</span>
-        <span>Gaming</span> <span className="mx-2">/</span>
-        <span className="text-black font-medium">Havic HV G-92 Gamepad</span>
+        <span>{product.category}</span> <span className="mx-2">/</span>
+        <span className="text-black font-medium">{product.title}</span>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-16">
         {/* Left: Thumbnail Gallery */}
         <div className="flex flex-col gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-[138px] w-[170px] bg-[#F5F5F5] rounded flex items-center justify-center p-4 cursor-pointer">
-              <img src="/gamepad-angle.png" alt="angle" className="max-h-full object-contain" />
+          {product.images.slice(0, 4).map((img, i) => (
+            <div 
+              key={i} 
+              onMouseEnter={() => setMainImage(img)}
+              className={`h-[138px] w-[170px] bg-[#F5F5F5] rounded flex items-center justify-center p-4 cursor-pointer border-2 transition-all ${mainImage === img ? 'border-[#DB4444]' : 'border-transparent'}`}
+            >
+              <img src={img} alt="thumbnail" className="max-h-full object-contain" />
             </div>
           ))}
         </div>
 
         {/* Center: Main Product Image */}
         <div className="flex-1 bg-[#F5F5F5] rounded flex items-center justify-center p-10 min-h-[600px]">
-          <img src="/main-gamepad.png" alt="Havic Gamepad" className="w-full object-contain" />
+          <img src={mainImage} alt={product.title} className="w-full max-h-[500px] object-contain" />
         </div>
 
         {/* Right: Product Selection Panel */}
         <div className="w-full lg:w-[400px]">
-          <h1 className="text-2xl font-semibold mb-4 text-black">Havic HV G-92 Gamepad</h1>
+          <h1 className="text-2xl font-semibold mb-4 text-black">{product.title}</h1>
           
           <div className="flex items-center gap-4 mb-4">
             <div className="flex text-yellow-400">
-              {[...Array(4)].map((_, i) => <span key={i}>★</span>)}
-              <span className="text-gray-300">★</span>
+               {[...Array(5)].map((_, i) => (
+                <Star key={i} size={16} fill={i < Math.floor(product.rating) ? "currentColor" : "none"} />
+              ))}
             </div>
-            <span className="text-sm text-gray-500 border-r border-black/50 pr-4">(150 Reviews)</span>
+            <span className="text-sm text-gray-500 border-r border-black/50 pr-4">({product.stock} reviews)</span>
             <span className="text-sm text-[#00FF66]">In Stock</span>
           </div>
 
-          <p className="text-2xl font-normal mb-6">$192.00</p>
-          <p className="text-sm leading-6 mb-6 border-b border-black/50 pb-6">
-            PlayStation 5 Controller Skin High quality vinyl with air channel adhesive for easy bubble free install & mess free removal Pressure sensitive.
+          <p className="text-2xl font-normal mb-6">${product.price.toFixed(2)}</p>
+          <p className="text-sm leading-6 mb-6 border-b border-black/50 pb-6 text-gray-700">
+            {product.description}
           </p>
 
-          {/* Configuration Options */}
           <div className="flex flex-col gap-6 mb-10">
+            {/* Colors (Dynamic placeholder since DummyJSON doesn't always have colors) */}
             <div className="flex items-center gap-6">
               <span className="text-xl">Colours:</span>
               <div className="flex gap-2">
@@ -96,15 +140,34 @@ const ProductDetailsPage = () => {
           {/* Action Row */}
           <div className="flex gap-4 mb-10">
             <div className="flex items-center border border-black/50 rounded overflow-hidden">
-              <button onClick={() => setQuantity(q => Math.max(1, q-1))} className="p-2 px-4 hover:bg-gray-100 border-r border-black/50"><Minus size={16}/></button>
+              <button 
+                onClick={() => setQuantity(q => Math.max(1, q - 1))} 
+                className="p-2 px-4 hover:bg-gray-100 border-r border-black/50 cursor-pointer"
+              >
+                <Minus size={16}/>
+              </button>
               <span className="px-8 font-medium">{quantity}</span>
-              <button onClick={() => setQuantity(q => q+1)} className="p-2 px-4 bg-[#DB4444] text-white"><Plus size={16}/></button>
+              <button 
+                onClick={() => setQuantity(q => q + 1)} 
+                className="p-2 px-4 bg-[#DB4444] text-white cursor-pointer"
+              >
+                <Plus size={16}/>
+              </button>
             </div>
-            <button className="flex-1 bg-[#DB4444] text-white rounded font-medium hover:bg-red-600">Buy Now</button>
-            <button className="p-2 border border-black/50 rounded hover:bg-gray-50"><Heart size={24}/></button>
+            <button 
+              onClick={handleBuyNow}
+              className="flex-1 bg-[#DB4444] text-white rounded font-medium hover:bg-red-600 transition-colors"
+            >
+              Buy Now
+            </button>
+            <button 
+              onClick={() => isInWishlist ? removeFromWishlist(product.id) : addToWishlist(product)}
+              className={`p-2 border border-black/50 rounded hover:bg-gray-50 transition-colors ${isInWishlist ? 'bg-[#DB4444] text-white border-[#DB4444]' : ''}`}
+            >
+              <Heart size={24} fill={isInWishlist ? "white" : "none"}/>
+            </button>
           </div>
 
-          {/* Delivery Services */}
           <div className="flex flex-col">
             <DeliveryInfo 
               icon={Truck} 
@@ -124,6 +187,3 @@ const ProductDetailsPage = () => {
 };
 
 export default ProductDetailsPage;
-
-
-
