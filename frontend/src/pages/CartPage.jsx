@@ -3,6 +3,8 @@ import CartItem from '../components/CartItem';
 import { CartContext } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+// import { Link } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const CartPage = () => {
   const { cartItems } = useContext(CartContext);
@@ -102,13 +104,23 @@ const CartPage = () => {
             <span className="text-xl">${total.toLocaleString()}</span>
           </div>
 
-          <div className="flex justify-center">
+          {/* <div className="flex justify-center">
             <button 
               disabled={cartItems.length === 0}
               className={`rounded bg-[#DB4444] px-12 py-4 text-white hover:bg-red-600 transition-colors w-full ${cartItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Process to checkout
+             <Link to={"/checkout"}>Proceed To Checkout</Link>
             </button>
+          </div> */}
+          <div className="flex justify-center">
+            {cartItems.length === 0 ? (
+              <span className="text-red-600 mt-2">Add items to cart to proceed to checkout.</span>
+            ):<button 
+              onClick={() => navigate('/checkout')}
+              className="rounded bg-[#DB4444] px-12 py-4 text-white hover:bg-red-600 transition-colors w-full"
+            >
+             <Link to={"/checkout"}>Proceed To Checkout</Link>
+            </button>}
           </div>
         </div>
       </div>
