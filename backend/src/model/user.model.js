@@ -10,9 +10,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default : false
     },
-    address : {
-      type : String,
-    }
+    permanentAddress: String,
+    temporaryAddress: String,
+    phoneNumber: String,
+    profilePicture: String,
+    tags: [String],
   },
   { timestamps: true }
 );
