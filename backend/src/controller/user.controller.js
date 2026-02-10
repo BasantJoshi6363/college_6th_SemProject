@@ -149,3 +149,36 @@ export const getAllUser = async (req, res) => {
     });
   }
 };
+// Inside user.controller.js
+export const updateUserRole = async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (user) {
+    user.isAdmin = req.body.isAdmin ?? user.isAdmin;
+    const updatedUser = await user.save();
+    res.json(updatedUser);
+  } else {
+    res.status(404).json({ message: "User not found" });
+  }
+};
+
+
+
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+      // Prevent an admin from accidentally deleting themselves
+      if (user._id.toString() === req.user._id.toString()) {
+        return res.status(400).json({ message: "You cannot delete your own admin account" });
+      }
+
+      await User.findByIdAndDelete(req.params.id);
+      res.status(200).json({ message: "User removed successfully" });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
