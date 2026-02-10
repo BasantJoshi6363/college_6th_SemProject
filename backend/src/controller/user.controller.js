@@ -13,7 +13,7 @@ const client = new OAuth2Client(
 // --- Register User ---
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, isAdmin } = req.body;
 
     // 1. Basic Validation
     if (!name || !email || !password) {
@@ -35,8 +35,9 @@ export const registerUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        isAdmin: user.isAdmin
       },
-      token: generateToken(user._id)
+      token: generateToken(user._id, user.isAdmin, user.name, user.email)
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -46,7 +47,7 @@ export const registerUser = async (req, res) => {
 // --- Login User ---
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password,isAdmin } = req.body;
 
     // 1. Validation
     if (!email || !password) {
@@ -63,6 +64,7 @@ export const loginUser = async (req, res) => {
           _id: user._id,
           name: user.name,
           email: user.email,
+          isAdmin: user.isAdmin
         },
         token: generateToken(user._id)
       });
