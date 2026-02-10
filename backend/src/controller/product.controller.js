@@ -15,7 +15,8 @@ import {
 export const createProduct = async (req, res) => {
   try {
     const { name, description, originalPrice, discountedPrice, category, stock, brand } = req.body;
-
+// console.log(req.body)
+// console.log(req.files)
     // Validate required fields
     if (!name || !description || !originalPrice || !category) {
       // Delete uploaded files if validation fails
