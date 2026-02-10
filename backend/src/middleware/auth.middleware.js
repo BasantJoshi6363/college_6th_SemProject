@@ -2,31 +2,41 @@ import jwt from "jsonwebtoken";
 import User from "../model/user.model.js";
 
 const protect = async (req, res, next) => {
-  const token = req.headers.authorization.split(" ")[1]
-  // let token = req.headers.authorization?.split(" ")[1];
+  try {
+    const authHeader = req.headers.authorization;
 
-  if (!token) return res.status(401).json({ message: "No token" });
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Not authorized, no token" });
+    }
 
-  const decoded = jwt.verify(token, "secretkey");
-  console.log(decoded.payload)
-  //   console.log(decoded.payload)
-  req.user = decoded.payload
+    const token = authHeader.split(" ")[1];
+    
+    const decoded = await jwt.verify(token, process.env.JWT_SECRET);
 
-  next();
+    // optional but recommended: pull fresh user from DB
+    const user = await User.findById(decoded.payload).select("-password");
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Not authorized, token failed" });
+  }
 };
 
 export default protect;
-
-export const isAdmin = async (req, res) => {
-  try {
-    const token = req.headers.authorization.split(" ")[1]
-    if (!token) return res.status(401).json({ message: "No token" });
-
-    const decoded = jwt.verify(token, "secretkey");
-    console.log(decoded.payload)
-    //   console.log(decoded.payload)
-    req.user = decoded.payload
-  } catch (error) {
-
+export const isAdmin = (req, res, next) => {
+  
+  if (!req.user) {
+    return res.status(401).json({ message: "Not authorized" });
   }
-}
+
+  if (req.user.isAdmin !== true) {
+    return res.status(403).json({ message: "Admin access only" });
+  }
+
+  next();
+};
