@@ -1,19 +1,33 @@
-import express from "express";
-import multer from "multer";
-import { createProduct, getAllProducts, updateProduct, deleteProduct } from "../controllers/product.controller.js";
+import express from 'express';
+import upload from '../utils/multer.js';
+import {
+  createProduct,
+  getProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct,
+  getCategories,
+  getBrands,
+} from '../controller/product.controller.js';
 
-const router = express.Router();
+import protect, { isAdmin } from '../middleware/auth.middleware.js';
 
-// Multer Storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
-});
-const upload = multer({ storage });
+const productRouter = express.Router();
 
-router.get("/", getAllProducts);
-router.post("/create", upload.array("images", 5), createProduct);
-router.put("/update/:id", upload.array("images", 5), updateProduct);
-router.delete("/delete/:id", deleteProduct);
+// Get categories and brands (must be before /:id route)
+productRouter.get('/categories/list', getCategories);
+productRouter.get('/brands/list', getBrands);
 
-export default router;
+// CRUD routes
+// productRouter.post('/', upload.array('images', 10), createProduct);
+productRouter.get('/', getProducts);
+productRouter.get('/:id', getProductById);
+// productRouter.put('/:id', upload.array('images', 10), updateProduct);
+// productRouter.delete('/:id', deleteProduct);
+
+
+productRouter.post('/', protect, isAdmin, upload.array('images', 10), createProduct);
+productRouter.put('/:id', protect, isAdmin, upload.array('images', 10), updateProduct);
+productRouter.delete('/:id', protect, isAdmin, deleteProduct);
+
+export default productRouter;
