@@ -5,6 +5,7 @@ import errorHandler from "./src/middleware/error.middleware.js";
 import dotenv from "dotenv";
 import cors from "cors";
 import productRouter from "./src/route/product.routes.js";
+import orderRouter from "./src/route/order.route.js";
 dotenv.config();
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.json());
 
 app.use("/api/auth", userRoutes);
 app.use('/api/products', productRouter);
+app.use('/api/orders', orderRouter);
 
 
 app.use(errorHandler);
