@@ -4,6 +4,7 @@ import { CheckCircle, Loader2, XCircle } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { memo } from 'react';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -16,7 +17,6 @@ const PaymentSuccess = () => {
     const verifyEsewaPayment = async () => {
       const encodedData = searchParams.get('data');
       
-      console.log("🔍 Payment Success Page - Encoded Data:", encodedData);
       
       if (!encodedData) {
         console.error("❌ No data parameter found");
@@ -126,4 +126,4 @@ const PaymentSuccess = () => {
   );
 };
 
-export default PaymentSuccess;
+export default memo(PaymentSuccess);

@@ -27,9 +27,16 @@ const ExploreProducts = ({ products }) => {
 
       {/* 2-Row Grid Layout */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+        {
+          products.length === 0 ? (
+            <p className="text-gray-500 col-span-full text-center">No products available.</p>
+          ) : (
+            products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))
+          ) 
+        }
+        {/*  */}
       </div>
 
       <div className="mt-16 flex justify-center">

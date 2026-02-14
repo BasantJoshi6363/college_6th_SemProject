@@ -58,8 +58,10 @@ const FlashSale = ({ products }) => {
         ref={scrollRef}
         className="flex gap-8 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
       >
-        {products.map((product) => (
-          <ProductCard key={product?.id} product={product} />
+        {products.length === 0 ? (
+          <p className="text-gray-500">No products available.</p>
+        ) : products.map((product) => (
+          <ProductCard key={product?._id} product={product} addToCart={addToCart} removeFromCart={removeFromCart} />
         ))}
       </div>
 

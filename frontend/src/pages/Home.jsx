@@ -6,25 +6,28 @@ import CategorySection from '../components/CategorySection';
 import ExploreProducts from '../components/ExploreOurProduct';
 import BestSellingProduct from '../components/BestSellingProducts';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { ProductContext } from '../context/ProductContext';
+import ProductContext from '../context/ProductContext';
+// import { ProductContext } from '../context/ProductContext';
 
 const Home = () => {
 
-    const { loading, dummyProducts } = (useContext(ProductContext));
+    const { loading, products } = useContext(ProductContext);
+    // console.log(products)
     if (loading) {
         return (
             <LoadingSpinner />
 
         );
     }
+     const flashSaleProducts = products.filter(product => product.isFlash);
 
     // if(loading && <><h1>Loading...</h1></>)
     return (
         <div>
-            <FlashSale products={dummyProducts} />
+            <FlashSale products={flashSaleProducts} />
             <CategorySection />
-            <ExploreProducts products={dummyProducts} />
-            <BestSellingProduct products={dummyProducts} />
+            <ExploreProducts products={products} />
+            <BestSellingProduct products={products} />
         </div>
     )
 }

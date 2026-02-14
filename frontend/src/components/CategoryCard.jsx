@@ -1,4 +1,5 @@
 import React from 'react';
+import { memo } from 'react';
 
 const   CategoryCard = ({ icon: Icon, label, isActive, onClick }) => {
   return (
@@ -18,4 +19,4 @@ const   CategoryCard = ({ icon: Icon, label, isActive, onClick }) => {
   );
 };
 
-export default CategoryCard;
+export default memo(CategoryCard);

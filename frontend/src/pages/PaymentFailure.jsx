@@ -1,6 +1,7 @@
 import React from 'react';
 import { XCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { memo } from 'react';
 
 const PaymentFailure = () => {
   const navigate = useNavigate();
@@ -41,4 +42,4 @@ const PaymentFailure = () => {
   );
 };
 
-export default PaymentFailure;
+export default memo(PaymentFailure);

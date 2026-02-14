@@ -2,6 +2,9 @@ import React, { useContext } from 'react';
 import { ChevronDown, Search, Heart, ShoppingCart, LogOut, User as UserIcon } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { CartContext } from '../context/CartContext';
+import { WishlistContext } from '../context/WishListContext';
+// import { WishlistContext } from '../context/WishlistContext';
 
 const TopHeader = () => {
   return (
@@ -23,25 +26,30 @@ const TopHeader = () => {
 
 const MainNavbar = () => {
   const { isAuthenticated, logout, user } = useContext(AuthContext);
+  const { cartItems } = useContext(CartContext);
 
-  // Filter out null/false values correctly
+  const { wishlistItems } = useContext(WishlistContext);
+
+  // Calculate dynamic counts
+  const cartCount = cartItems?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+  const wishlistCount = wishlistItems?.length || 0;
+
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'Contact', href: '/contact' },
     { name: 'About', href: '/about' },
+    user?.isAdmin && { name: 'Admin', href: '/admin' },
     !isAuthenticated && { name: 'Sign Up', href: '/signup' },
-  ].filter(Boolean); // This removes the 'false' entries
+  ].filter(Boolean);
 
   return (
     <nav className="w-full border-b border-gray-200 bg-white py-4 sticky top-0 z-50">
       <div className="mx-auto max-w-7xl flex items-center justify-between px-4">
         
-        {/* Logo */}
         <Link to="/" className="flex-shrink-0">
           <h1 className="text-2xl font-bold tracking-wider">EasyMart</h1>
         </Link>
 
-        {/* Nav Links */}
         <ul className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <li key={link.name}>
@@ -59,9 +67,7 @@ const MainNavbar = () => {
           ))}
         </ul>
 
-        {/* Search & Actions */}
         <div className="flex items-center gap-3 md:gap-6">
-          {/* Search Bar */}
           <div className="relative hidden lg:block">
             <input 
               type="text" 
@@ -71,34 +77,48 @@ const MainNavbar = () => {
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
           </div>
 
-          {/* Icons Group */}
           <div className="flex items-center gap-4">
+            {/* Wishlist Icon with Badge */}
             <Link to="/wishlist" className="relative group">
               <Heart size={24} className="group-hover:text-[#DB4444] transition-colors" />
+              {wishlistCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#DB4444] text-[10px] text-white">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
             
-            <Link to="/cart" className="relative group">
-              <ShoppingCart size={24} className="group-hover:text-[#DB4444] transition-colors" />
-            </Link>
+            {/* Cart Icon with Badge */}
+            {user && (
+              <Link to="/cart" className="relative group">
+                <ShoppingCart size={24} className="group-hover:text-[#DB4444] transition-colors" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#DB4444] text-[10px] text-white">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            )}
 
-            {/* Auth Actions */}
             {isAuthenticated ? (
+              
               <div className="flex items-center gap-4 border-l pl-4 ml-2">
-                <Link to="/profile" className="flex items-center gap-1 group">
+              
+                {isAuthenticated&&( <Link to="/profile" className="flex items-center gap-1 group">
                   <UserIcon size={24} className="group-hover:text-blue-600 transition-colors" />
                   <span className="hidden sm:inline text-sm font-medium">{user?.name?.split(' ')[0]}</span>
-                </Link>
+                </Link>)}
+               
                 <button 
                   onClick={logout}
                   className="p-1 hover:bg-gray-100 rounded-full text-gray-600 hover:text-red-600 transition-all"
-                  title="Logout"
                 >
                   <LogOut size={22} />
                 </button>
               </div>
             ) : (
-              <Link to="/login" className="lg:hidden">
-                 <UserIcon size={24} />
+              <Link to="/login">
+                 <UserIcon size={24} className="hover:text-gray-600 transition-colors" />
               </Link>
             )}
           </div>

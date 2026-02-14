@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedToken = localStorage.getItem("google-token");
     const storedUser = localStorage.getItem("user");
+   
 
     if (storedToken && storedUser) {
       try {
@@ -36,7 +37,8 @@ export const AuthProvider = ({ children }) => {
       _id: userData._id,
       name: userData.name,
       email: userData.email,
-      picture: userData.picture || ""
+      picture: userData.picture || "",
+      isAdmin: userData.isAdmin || false
     };
 
     setUser(sanitizedUser);
