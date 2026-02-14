@@ -14,37 +14,25 @@ import {
  */
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, originalPrice, discountedPrice, category, stock, brand } = req.body;
-// console.log(req.body)
-// console.log(req.files)
+    const { 
+      name, description, originalPrice, discountedPrice, 
+      category, stock, brand, sizes, isFlash, isActive 
+    } = req.body;
+
     // Validate required fields
     if (!name || !description || !originalPrice || !category) {
-      // Delete uploaded files if validation fails
-      if (req.files) {
-        deleteLocalFiles(req.files.map(file => file.path));
-      }
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Please provide all required fields' 
-      });
+      if (req.files) deleteLocalFiles(req.files.map(file => file.path));
+      return res.status(400).json({ success: false, message: 'Required fields missing' });
     }
 
     // Upload images to Cloudinary
     let uploadedImages = [];
     if (req.files && req.files.length > 0) {
-      try {
-        uploadedImages = await uploadMultipleToCloudinary(req.files);
-      } catch (error) {
-        return res.status(500).json({ 
-          success: false, 
-          message: 'Image upload failed',
-          error: error.message 
-        });
-      }
+      uploadedImages = await uploadMultipleToCloudinary(req.files);
     }
 
-    // Create product
-    const product = await Product.create({
+    // Create product with new schema fields
+    const product = new Product({
       name,
       description,
       originalPrice: Number(originalPrice),
@@ -53,7 +41,15 @@ export const createProduct = async (req, res) => {
       stock: stock ? Number(stock) : 0,
       brand,
       images: uploadedImages,
+      // Handle array from FormData
+      sizes: Array.isArray(sizes) ? sizes : sizes ? [sizes] : [],
+      // Convert "true"/"false" strings from FormData to Boolean
+      isFlash: isFlash === 'true' || isFlash === true,
+      isActive: isActive === 'false' || isActive === false ? false : true,
     });
+
+    // .save() triggers the pre-save middleware to calculate discountedPercent
+    await product.save();
 
     res.status(201).json({
       success: true,
@@ -61,16 +57,8 @@ export const createProduct = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    // Clean up uploaded files in case of error
-    if (req.files) {
-      deleteLocalFiles(req.files.map(file => file.path));
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Error creating product',
-      error: error.message,
-    });
+    if (req.files) deleteLocalFiles(req.files.map(file => file.path));
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -82,64 +70,42 @@ export const createProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
   try {
     const {
-      search,
-      category,
-      brand,
-      minPrice,
-      maxPrice,
-      inStock,
-      page = 1,
-      limit = 10,
-      sort = '-createdAt',
+      search, category, brand, minPrice, maxPrice,
+      inStock, isFlash, page = 1, limit = 10, sort = '-createdAt',
     } = req.query;
 
-    // Build query
     const query = { isActive: true };
 
-    // Text search
-    if (search) {
-      query.$text = { $search: search };
-    }
-
-    // Filters
+    if (search) query.$text = { $search: search };
     if (category) query.category = category;
     if (brand) query.brand = brand;
     if (inStock === 'true') query.stock = { $gt: 0 };
+    
+    // Support Flash Sale filtering
+    if (isFlash === 'true') query.isFlash = true;
 
-    // Price range
     if (minPrice || maxPrice) {
       query.originalPrice = {};
       if (minPrice) query.originalPrice.$gte = Number(minPrice);
       if (maxPrice) query.originalPrice.$lte = Number(maxPrice);
     }
 
-    // Pagination
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    // Execute query
-    const products = await Product.find(query)
-      .sort(sort)
-      .skip(skip)
-      .limit(limitNum);
-
+    const products = await Product.find(query).sort(sort).skip(skip).limit(limitNum);
     const total = await Product.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      count: products.length,
       total,
       page: pageNum,
       pages: Math.ceil(total / limitNum),
       data: products,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching products',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -180,61 +146,54 @@ export const getProductById = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-
     if (!product) {
-      // Delete uploaded files if product not found
-      if (req.files) {
-        deleteLocalFiles(req.files.map(file => file.path));
-      }
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found',
-      });
+      if (req.files) deleteLocalFiles(req.files.map(file => file.path));
+      return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    const { name, description, originalPrice, discountedPrice, category, stock, brand, removeImages } = req.body;
+    const { 
+      name, description, originalPrice, discountedPrice, 
+      category, stock, brand, sizes, isFlash, isActive, removeImages 
+    } = req.body;
 
-    // Handle image removal
+    // 1. Handle image removal (Expects array of publicIds as JSON string)
     if (removeImages) {
-      try {
-        const imagesToRemove = JSON.parse(removeImages);
-        const publicIds = imagesToRemove.map(img => img.publicId);
-        
-        // Delete from Cloudinary
-        await deleteMultipleFromCloudinary(publicIds);
-        
-        // Remove from product images array
+      const publicIdsToRemove = JSON.parse(removeImages);
+      if (publicIdsToRemove.length > 0) {
+        await deleteMultipleFromCloudinary(publicIdsToRemove);
         product.images = product.images.filter(
-          img => !publicIds.includes(img.publicId)
+          img => !publicIdsToRemove.includes(img.publicId)
         );
-      } catch (error) {
-        console.error('Error removing images:', error);
       }
     }
 
-    // Upload new images if provided
+    // 2. Upload new images
     if (req.files && req.files.length > 0) {
-      try {
-        const newImages = await uploadMultipleToCloudinary(req.files);
-        product.images.push(...newImages);
-      } catch (error) {
-        return res.status(500).json({
-          success: false,
-          message: 'Image upload failed',
-          error: error.message,
-        });
-      }
+      const newImages = await uploadMultipleToCloudinary(req.files);
+      product.images.push(...newImages);
     }
 
-    // Update fields
+    // 3. Update standard fields
     if (name) product.name = name;
     if (description) product.description = description;
-    if (originalPrice) product.originalPrice = Number(originalPrice);
-    if (discountedPrice !== undefined) product.discountedPrice = discountedPrice ? Number(discountedPrice) : undefined;
     if (category) product.category = category;
-    if (stock !== undefined) product.stock = Number(stock);
     if (brand) product.brand = brand;
+    if (originalPrice) product.originalPrice = Number(originalPrice);
+    
+    // Handle sizes array
+    if (sizes) product.sizes = Array.isArray(sizes) ? sizes : [sizes];
 
+    // Handle Booleans
+    if (isFlash !== undefined) product.isFlash = isFlash === 'true' || isFlash === true;
+    if (isActive !== undefined) product.isActive = isActive === 'true' || isActive === true;
+
+    // Handle numeric fields
+    if (stock !== undefined) product.stock = Number(stock);
+    if (discountedPrice !== undefined) {
+        product.discountedPrice = discountedPrice === "" ? undefined : Number(discountedPrice);
+    }
+
+    // Save triggers the 'pre-save' middleware for discountedPercent
     await product.save();
 
     res.status(200).json({
@@ -243,16 +202,8 @@ export const updateProduct = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    // Clean up uploaded files in case of error
-    if (req.files) {
-      deleteLocalFiles(req.files.map(file => file.path));
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Error updating product',
-      error: error.message,
-    });
+    if (req.files) deleteLocalFiles(req.files.map(file => file.path));
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

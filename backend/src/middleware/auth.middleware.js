@@ -3,7 +3,7 @@ import User from "../model/user.model.js";
 
 const protect = async (req, res, next) => {
   try {
-    console.log("first")
+    // console.log("first")
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -13,7 +13,7 @@ const protect = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     
     const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decoded)
+    // console.log(decoded)
 
     // optional but recommended: pull fresh user from DB
     const user = await User.findById(decoded.payload).select("-password");
