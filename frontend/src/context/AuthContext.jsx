@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }) => {
 
   // Helper to sanitize and save data
   const saveAuthData = useCallback((userData, tokenData) => {
+    console.log(userData)
     const sanitizedUser = {
       _id: userData._id,
       name: userData.name,
@@ -101,6 +102,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token, saveAuthData]);
 
+  const googleLogin = useCallback(async (code) => {
+  const toastId = toast.loading("Signing in with Google...");
+  try {
+    const { data } = await axios.post(`${baseUrl}/google`, { code });
+    // console.log(data)
+
+    if (!data.success) {
+      throw new Error(data.message);
+    }
+
+    saveAuthData(data.user, data.token);
+
+    toast.success("Google login successful!", { id: toastId });
+    navigate("/");
+    return data;
+  } catch (error) {
+    const message = error.response?.data?.message || error.message || "Google login failed";
+    toast.error(message, { id: toastId });
+    return null;
+  }
+}, [navigate, saveAuthData]);
+
+
   // LOGOUT
   const logout = useCallback(() => {
     setUser(null);
@@ -114,15 +138,17 @@ export const AuthProvider = ({ children }) => {
   const isAuthenticated = !!token;
 
   const value = useMemo(() => ({
-    user, 
-    token, 
-    loading, 
-    isAuthenticated, 
-    login, 
-    register, 
-    logout, 
-    updateProfile
-  }), [user, token, loading, isAuthenticated, login, register, logout, updateProfile]);
+  user, 
+  token, 
+  loading, 
+  isAuthenticated, 
+  login, 
+  register, 
+  logout, 
+  updateProfile,
+  googleLogin 
+}), [user, token, loading, isAuthenticated, login, register, logout, updateProfile, googleLogin]);
+
 
   return (
     <AuthContext.Provider value={value}>

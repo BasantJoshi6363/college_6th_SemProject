@@ -145,16 +145,16 @@ const ProductDetailsPage = () => {
           </div>
 
           {/* Price */}
-          <div className="flex items-center gap-4 mb-6">
-            <p className="text-2xl font-medium">
-              ${(product.discountedPrice || product.originalPrice).toFixed(2)}
-            </p>
-            {product.discountedPrice && (
-              <p className="text-xl text-gray-500 line-through">
-                ${product.originalPrice.toFixed(2)}
-              </p>
-            )}
-          </div>
+         <div className="flex items-center gap-4 mb-6">
+  <p className="text-2xl font-medium">
+    Rs{(product.discountedPrice || product.originalPrice).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+  </p>
+  {product.discountedPrice && (
+    <p className="text-xl text-gray-500 line-through">
+      Rs{product.originalPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+    </p>
+  )}
+</div>
 
           <p className="text-sm leading-7 mb-8 border-b border-black/30 pb-8 text-gray-600">
             {product.description}

@@ -7,16 +7,23 @@ const CartPage = () => {
   const { cartItems } = useContext(CartContext);
   const navigate = useNavigate();
 
-  // Subtotal logic
+  // 1. Subtotal logic (Matches Checkout rounding)
   const subtotal = useMemo(() => {
-    return cartItems.reduce((acc, item) => {
+    const total = cartItems.reduce((acc, item) => {
       const price = item.discountedPrice || item.originalPrice || 0;
       return acc + price * item.quantity;
     }, 0);
+    return Math.round(total);
   }, [cartItems]);
 
-  // No currency rate — use subtotal directly
-  const grandTotal = subtotal;
+  // 2. Tax logic (Matches Checkout 13%)
+  const taxPrice = useMemo(() => Math.round(subtotal * 0.13), [subtotal]);
+
+  // 3. Shipping logic (Matches Checkout: Free > 500, else 100)
+  const shippingPrice = useMemo(() => (subtotal > 500 || subtotal === 0 ? 0 : 100), [subtotal]);
+
+  // 4. Grand Total
+  const grandTotal = subtotal + taxPrice + shippingPrice;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-20">
@@ -65,12 +72,20 @@ const CartPage = () => {
 
         <div className="flex justify-between mb-4 pb-4 border-b border-black/10">
           <span>Subtotal:</span>
-          <span className="font-medium">Rs {grandTotal.toLocaleString()}</span>
+          <span className="font-medium">Rs {subtotal.toLocaleString()}</span>
         </div>
 
-        <div className="flex justify-between mb-8 pb-4 border-b border-black/10">
+        {/* Added Tax row to match checkout */}
+        <div className="flex justify-between mb-4 pb-4 border-b border-black/10">
+          <span>Tax (13%):</span>
+          <span className="font-medium">Rs {taxPrice.toLocaleString()}</span>
+        </div>
+
+        <div className="flex justify-between mb-4 pb-4 border-b border-black/10">
           <span>Shipping:</span>
-          <span className="text-[#00FF66]">Free</span>
+          <span className={shippingPrice === 0 ? "text-[#00FF66]" : "font-medium"}>
+            {shippingPrice === 0 ? "Free" : `Rs ${shippingPrice}`}
+          </span>
         </div>
 
         <div className="flex justify-between mb-8 font-medium">

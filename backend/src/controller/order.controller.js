@@ -20,12 +20,26 @@ export const createOrder = async (req, res) => {
       totalPrice 
     } = req.body;
 
-    // Validate cart is not empty
     if (!orderItems || orderItems.length === 0) {
       return res.status(400).json({ message: 'No order items' });
     }
 
-    // Create order
+    // --- STOCK MANAGEMENT BLOCK ---
+    // Prepare bulk operations to decrease stock
+    const bulkOps = orderItems.map((item) => {
+      return {
+        updateOne: {
+          filter: { _id: item.product },
+          // $inc with a negative value decreases the number
+          update: { $inc: { stock: -item.quantity } }, 
+        },
+      };
+    });
+
+    // Execute the bulk update
+    await Product.bulkWrite(bulkOps, {});
+    // ------------------------------
+
     const order = new Order({
       orderItems,
       shippingAddress,
@@ -37,38 +51,20 @@ export const createOrder = async (req, res) => {
       user: req.user._id
     });
 
-    // Save order to get _id
     const createdOrder = await order.save();
 
     let signature = "";
     let totalAmountForPayment = "";
 
     if (paymentMethod === 'eSewa') {
-      // Convert to integer string
       totalAmountForPayment = Math.round(totalPrice).toString();
       const transactionId = createdOrder._id.toString();
-
-      // Create message - EXACT FORMAT, NO SPACES
       const message = `total_amount=${totalAmountForPayment},transaction_uuid=${transactionId},product_code=${ESEWA_PRODUCT_CODE}`;
       
-      console.log("\n========================================");
-      console.log("🔐 eSewa SIGNATURE GENERATION");
-      console.log("========================================");
-      console.log("Transaction ID:", transactionId);
-      console.log("Total Amount:", totalAmountForPayment);
-      console.log("Product Code:", ESEWA_PRODUCT_CODE);
-      console.log("Secret Key:", ESEWA_SECRET_KEY);
-      console.log("Message:", message);
-      console.log("Message Length:", message.length);
-      
-      // Generate signature
       signature = crypto
         .createHmac('sha256', ESEWA_SECRET_KEY)
         .update(message)
         .digest('base64');
-      
-      console.log("Generated Signature:", signature);
-      console.log("========================================\n");
     }
 
     res.status(201).json({
@@ -83,7 +79,6 @@ export const createOrder = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 // @desc    Verify eSewa payment
 // @route   GET /api/orders/verify-payment
 export const verifyEsewaPayment = async (req, res) => {

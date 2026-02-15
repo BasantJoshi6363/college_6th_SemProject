@@ -8,6 +8,7 @@ import PublicRoute from "./routes/PublicRoute";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { AuthContext } from "./context/AuthContext";
 import OrderSuccess from "./components/OrderSuccess";
+import ShopPage from "./pages/ShopPage";
 
 
 const Home = lazy(() => import("./pages/Home"));
@@ -46,6 +47,7 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/products/:id" element={<ProductDetailsPage />} />
+            {/* <Route path="/shop" element={<ShopPage />} /> */}
 
             <Route
               path="/signup"

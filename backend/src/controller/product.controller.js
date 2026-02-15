@@ -70,8 +70,16 @@ export const createProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
   try {
     const {
-      search, category, brand, minPrice, maxPrice,
-      inStock, isFlash, page = 1, limit = 10, sort = '-createdAt',
+      search,
+      category,
+      brand,
+      minPrice,
+      maxPrice,
+      inStock,
+      isFlash,
+      page = 1,
+      limit,
+      sort = '-createdAt',
     } = req.query;
 
     const query = { isActive: true };
@@ -80,8 +88,6 @@ export const getProducts = async (req, res) => {
     if (category) query.category = category;
     if (brand) query.brand = brand;
     if (inStock === 'true') query.stock = { $gt: 0 };
-    
-    // Support Flash Sale filtering
     if (isFlash === 'true') query.isFlash = true;
 
     if (minPrice || maxPrice) {
@@ -91,23 +97,36 @@ export const getProducts = async (req, res) => {
     }
 
     const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
+    const limitNum = limit ? parseInt(limit) : null;
 
-    const products = await Product.find(query).sort(sort).skip(skip).limit(limitNum);
-    const total = await Product.countDocuments(query);
+    let productsQuery = Product.find(query).sort(sort);
+
+    let total = await Product.countDocuments(query);
+
+    // ✅ Apply pagination ONLY if limit exists
+    if (limitNum && limitNum > 0) {
+      const skip = (pageNum - 1) * limitNum;
+      productsQuery = productsQuery.skip(skip).limit(limitNum);
+    }
+
+    const products = await productsQuery;
 
     res.status(200).json({
       success: true,
       total,
-      page: pageNum,
-      pages: Math.ceil(total / limitNum),
+      page: limitNum ? pageNum : 1,
+      pages: limitNum ? Math.ceil(total / limitNum) : 1,
       data: products,
     });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
+
 
 /**
  * @desc    Get single product by ID

@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, useMemo } from 'react
 import axios from 'axios';
 import { useEffect } from 'react';
 
- const ProductContext = createContext();
+const ProductContext = createContext();
 
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
@@ -25,50 +25,61 @@ export const ProductProvider = ({ children }) => {
 
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-  // Memoized fetch products function
-  const fetchProducts = useCallback(async (customFilters = {}, customPage = 1) => {
+const fetchProducts = useCallback(
+  async (customFilters = {}, customPage = 1, fetchAll = false) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const params = {
         ...filters,
         ...customFilters,
         page: customPage,
-        limit: pagination.limit,
+        limit: fetchAll ? 0 : pagination.limit, // 👈 KEY CHANGE
       };
 
-      // Build query string
       const queryParams = new URLSearchParams();
+
       Object.keys(params).forEach(key => {
-        if (params[key] !== '' && params[key] !== null && params[key] !== undefined) {
+        if (
+          params[key] !== '' &&
+          params[key] !== null &&
+          params[key] !== undefined
+        ) {
           queryParams.append(key, params[key]);
         }
       });
 
-      const { data } = await axios.get(`${baseUrl}/products?${queryParams.toString()}`);
-      
+      const { data } = await axios.get(
+        `${baseUrl}/products?${queryParams.toString()}`
+      );
+
       setProducts(data.data);
-      setPagination({
-        page: data.page,
-        limit: pagination.limit,
-        total: data.total,
-        pages: data.pages,
-      });
+
+      if (!fetchAll) {
+        setPagination({
+          page: data.page,
+          limit: pagination.limit,
+          total: data.total,
+          pages: data.pages,
+        });
+      }
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to fetch products';
+      const message =
+        err.response?.data?.message || 'Failed to fetch products';
       setError(message);
-      console.error('Error fetching products:', err);
     } finally {
       setLoading(false);
     }
-  }, [filters, pagination.limit, baseUrl]);
+  },
+  [filters, pagination.limit, baseUrl]
+);
 
   useEffect(() => {
-    fetchProducts();
+    fetchProducts({}, 1, true);
+
   }, [fetchProducts]);
 
-  // Memoized create product function
   const createProduct = useCallback(async (productData) => {
     setLoading(true);
     setError(null);
@@ -76,8 +87,6 @@ export const ProductProvider = ({ children }) => {
     try {
       let finalData;
 
-      // FIX: If it's already FormData (from AdminPage), use it directly.
-      // If it's a regular object, then convert it.
       if (productData instanceof FormData) {
         finalData = productData;
       } else {
@@ -95,7 +104,6 @@ export const ProductProvider = ({ children }) => {
         }
       }
 
-      // Debug: Check what's actually inside before sending
       for (let pair of finalData.entries()) {
         console.log(pair[0] + ': ' + pair[1]);
       }
@@ -107,7 +115,6 @@ export const ProductProvider = ({ children }) => {
         },
       });
       
-      // Refresh products list
       await fetchProducts();
       
       return data;
@@ -120,7 +127,6 @@ export const ProductProvider = ({ children }) => {
     }
   }, [fetchProducts, baseUrl]);
 
-  // Memoized get single product function
   const getProduct = useCallback(async (id) => {
     setLoading(true);
     setError(null);
@@ -137,7 +143,6 @@ export const ProductProvider = ({ children }) => {
     }
   }, [baseUrl]);
 
-  // Memoized update product function
   const updateProduct = useCallback(async (id, productData) => {
   setLoading(true);
   try {
@@ -145,7 +150,6 @@ export const ProductProvider = ({ children }) => {
     if (productData instanceof FormData) {
       finalData = productData;
     } else {
-      // ... keep your existing object-to-formdata logic here ...
     }
 
     const { data } = await axios.put(`${baseUrl}/products/${id}`, finalData, {
@@ -155,15 +159,12 @@ export const ProductProvider = ({ children }) => {
       },
     });
     
-    // Refresh the list to show updated data
     fetchProducts();
     return data;
   } catch (err) {
-    // ... error handling ...
   }
 }, [baseUrl, fetchProducts]);
 
-  // Memoized delete product function
   const deleteProduct = useCallback(async (id) => {
     setLoading(true);
     setError(null);
@@ -175,12 +176,10 @@ export const ProductProvider = ({ children }) => {
         },
       });
       
-      // Remove product from state
       setProducts(prevProducts =>
         prevProducts.filter(product => product._id !== id)
       );
       
-      // Refresh if current page is empty
       if (products.length === 1 && pagination.page > 1) {
         await fetchProducts({}, pagination.page - 1);
       }
@@ -193,7 +192,6 @@ export const ProductProvider = ({ children }) => {
     }
   }, [products.length, pagination.page, fetchProducts, baseUrl]);
 
-  // Memoized update filters function
   const updateFilters = useCallback((newFilters) => {
     setFilters(prevFilters => ({
       ...prevFilters,
@@ -201,7 +199,6 @@ export const ProductProvider = ({ children }) => {
     }));
   }, []);
 
-  // Memoized reset filters function
   const resetFilters = useCallback(() => {
     setFilters({
       search: '',
@@ -213,28 +210,23 @@ export const ProductProvider = ({ children }) => {
     });
   }, []);
 
-  // Memoized search function
   const searchProducts = useCallback(async (searchTerm) => {
     updateFilters({ search: searchTerm });
     await fetchProducts({ search: searchTerm }, 1);
   }, [updateFilters, fetchProducts]);
 
-  // Memoized change page function
   const changePage = useCallback(async (newPage) => {
     await fetchProducts({}, newPage);
   }, [fetchProducts]);
 
-  // Memoized context value
   const value = useMemo(
     () => ({
-      // State
       products,
       loading,
       error,
       pagination,
       filters,
       
-      // Actions
       fetchProducts,
       createProduct,
       getProduct,
@@ -269,8 +261,6 @@ export const ProductProvider = ({ children }) => {
     </ProductContext.Provider>
   );
 };
-
-// Custom hook to use Product Context
 
 
 export default ProductContext;

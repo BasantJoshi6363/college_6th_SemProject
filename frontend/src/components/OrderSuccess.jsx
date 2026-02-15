@@ -25,7 +25,7 @@ const OrderSuccess = () => {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button 
-            onClick={() => navigate('/account/orders')}
+            onClick={() => navigate('/profile')}
             className="bg-[#DB4444] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#c23d3d] transition"
           >
             View My Orders

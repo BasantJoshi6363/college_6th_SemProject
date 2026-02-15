@@ -78,15 +78,21 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// --- Google Login ---
+
 export const googleLogin = async (req, res) => {
+  console.log("first")
   try {
     const { code } = req.body;
+
     if (!code) {
-      return res.status(400).json({ success: false, message: "Auth code is missing" });
+      return res.status(400).json({
+        success: false,
+        message: "Auth code is missing"
+      });
     }
 
     const { tokens } = await client.getToken(code);
+
     const ticket = await client.verifyIdToken({
       idToken: tokens.id_token,
       audience: process.env.GOOGLE_CLIENT_ID
@@ -94,19 +100,34 @@ export const googleLogin = async (req, res) => {
 
     const { email, name, picture } = ticket.getPayload();
 
-    // Upsert returns the updated document
-    const user = await User.findOneAndUpdate(
-      { email }, 
-      { name, picture }, 
-      { upsert: true, new: true }
-    );
+    let user = await User.findOne({ email });
 
-    const token = generateToken(user._id, user.isAdmin, user.name, user.email);
+    if (!user) {
+      user = await User.create({
+        email,
+        name,
+        picture
+      });
+    }
+
+
+    const token = generateToken(
+      user._id,
+      user.isAdmin,
+      user.name,
+      user.email
+    );
 
     return res.status(200).json({
       success: true,
       message: "Google login successful",
-      user,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+        isAdmin: user.isAdmin
+      },
       token
     });
 
@@ -117,6 +138,8 @@ export const googleLogin = async (req, res) => {
     });
   }
 };
+
+
 
 // --- Update Current User Profile ---
 export const updateUser = async (req, res) => {

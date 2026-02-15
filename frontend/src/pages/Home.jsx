@@ -26,8 +26,8 @@ const Home = () => {
         <div>
             <FlashSale products={flashSaleProducts} />
             <CategorySection />
-            <ExploreProducts products={products} />
-            <BestSellingProduct products={products} />
+            <ExploreProducts products={products.slice(0, 8)} />
+            <BestSellingProduct products={products.slice(8, 16)} />
         </div>
     )
 }

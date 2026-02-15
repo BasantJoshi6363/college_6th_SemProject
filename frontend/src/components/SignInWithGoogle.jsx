@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
+import { AuthContext } from "../context/AuthContext";
 
 const SignInWithGoogle = () => {
   const navigate = useNavigate();
+  const { googleLogin } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
 
   const login = useGoogleLogin({
@@ -13,15 +14,11 @@ const SignInWithGoogle = () => {
     onSuccess: async (response) => {
       try {
         setLoading(true);
+        const data = await googleLogin(response.code);
 
-        const resp = await axios.post(
-          "http://localhost:5000/api/auth/google",
-          { code: response.code }
-        );
+        if (!data) throw new Error("Google login failed");
 
-        console.log("login success", resp.data);
-
-        localStorage.setItem("google-token", resp.data.token);
+        console.log("login success", data);
         navigate("/");
       } catch (error) {
         console.error("Google login failed:", error);
