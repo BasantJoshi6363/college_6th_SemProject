@@ -3,34 +3,11 @@ import { useParams } from 'react-router-dom';
 import { Minus, Plus, Heart, Truck, RefreshCcw, Star, Loader2 } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { WishlistContext } from '../context/WishListContext';
-
-// --- Sub-Components ---
-const SizeButton = ({ size, isSelected, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`h-8 w-10 rounded border text-sm font-medium transition-all ${
-      isSelected
-        ? 'bg-[#DB4444] border-[#DB4444] text-white'
-        : 'border-black/50 text-black hover:border-[#DB4444]'
-    }`}
-  >
-    {size}
-  </button>
-);
-
-const DeliveryInfo = ({ icon: Icon, title, linkText, description }) => (
-  <div className="flex items-center gap-4 border border-black/30 p-4 first:rounded-t last:rounded-b last:border-t-0">
-    <Icon size={32} />
-    <div>
-      <h4 className="text-base font-medium">{title}</h4>
-      <p className="text-xs font-medium underline cursor-pointer">{linkText}</p>
-      {description && <p className="text-xs mt-1 text-gray-500">{description}</p>}
-    </div>
-  </div>
-);
+import { RecommendationContext } from '../context/ReccomendationContext';
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
+  const { trackInteraction } = useContext(RecommendationContext);
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,10 +28,12 @@ const ProductDetailsPage = () => {
           setProduct(result.data);
           setMainImage(result.data.images[0]?.url || '');
 
-          // Auto-select first size if available
           if (result.data.sizes && result.data.sizes.length > 0) {
             setSelectedSize(result.data.sizes[0]);
           }
+          
+          // ✅ Track view interaction
+          trackInteraction(id, 'view');
         }
       } catch (err) {
         console.error("Failed to fetch product", err);
@@ -65,7 +44,7 @@ const ProductDetailsPage = () => {
 
     getProduct();
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [id, trackInteraction]);
 
   if (loading) {
     return (
@@ -85,12 +64,23 @@ const ProductDetailsPage = () => {
   const handleAddToCart = () => {
     const cartItem = { ...product, quantity };
 
-    // Only include size if product has sizes
     if (product.sizes && product.sizes.length > 0) {
       cartItem.selectedSize = selectedSize;
     }
 
     addToCart(cartItem);
+    
+    // ✅ Track cart interaction
+    trackInteraction(product._id, 'cart');
+  };
+
+  const handleWishlistToggle = () => {
+    if (isInWishlist) {
+      removeFromWishlist(product._id);
+    } else {
+      addToWishlist(product);
+      trackInteraction(product._id, 'wishlist');
+    }
   };
 
   return (
@@ -145,33 +135,38 @@ const ProductDetailsPage = () => {
           </div>
 
           {/* Price */}
-         <div className="flex items-center gap-4 mb-6">
-  <p className="text-2xl font-medium">
-    Rs{(product.discountedPrice || product.originalPrice).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-  </p>
-  {product.discountedPrice && (
-    <p className="text-xl text-gray-500 line-through">
-      Rs{product.originalPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-    </p>
-  )}
-</div>
+          <div className="flex items-center gap-4 mb-6">
+            <p className="text-2xl font-medium">
+              Rs{(product.discountedPrice || product.originalPrice).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+            </p>
+            {product.discountedPrice && (
+              <p className="text-xl text-gray-500 line-through">
+                Rs{product.originalPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+              </p>
+            )}
+          </div>
 
           <p className="text-sm leading-7 mb-8 border-b border-black/30 pb-8 text-gray-600">
             {product.description}
           </p>
 
-          {/* Sizes - ONLY IF AVAILABLE */}
+          {/* Sizes */}
           {product.sizes && product.sizes.length > 0 && (
             <div className="flex items-center gap-6 mb-10">
               <span className="text-xl font-medium">Size:</span>
               <div className="flex gap-3 flex-wrap">
                 {product.sizes.map((s) => (
-                  <SizeButton
+                  <button
                     key={s}
-                    size={s}
-                    isSelected={selectedSize === s}
                     onClick={() => setSelectedSize(s)}
-                  />
+                    className={`h-8 w-10 rounded border text-sm font-medium transition-all ${
+                      selectedSize === s
+                        ? 'bg-[#DB4444] border-[#DB4444] text-white'
+                        : 'border-black/50 text-black hover:border-[#DB4444]'
+                    }`}
+                  >
+                    {s}
+                  </button>
                 ))}
               </div>
             </div>
@@ -204,11 +199,7 @@ const ProductDetailsPage = () => {
             </button>
 
             <button
-              onClick={() =>
-                isInWishlist
-                  ? removeFromWishlist(product._id)
-                  : addToWishlist(product)
-              }
+              onClick={handleWishlistToggle}
               className={`p-2 border border-black/50 rounded-md ${
                 isInWishlist ? 'bg-[#DB4444] text-white border-[#DB4444]' : ''
               }`}
@@ -219,18 +210,22 @@ const ProductDetailsPage = () => {
 
           {/* Logistics */}
           <div className="flex flex-col rounded-md">
-            <DeliveryInfo
-              icon={Truck}
-              title="Free Delivery"
-              linkText="Check your location"
-              description="Enter your postal code for delivery availability"
-            />
-            <DeliveryInfo
-              icon={RefreshCcw}
-              title="Return Delivery"
-              linkText="Details"
-              description="Free 30 Days Delivery Returns. Check details"
-            />
+            <div className="flex items-center gap-4 border border-black/30 p-4 first:rounded-t">
+              <Truck size={32} />
+              <div>
+                <h4 className="text-base font-medium">Free Delivery</h4>
+                <p className="text-xs font-medium underline cursor-pointer">Check your location</p>
+                <p className="text-xs mt-1 text-gray-500">Enter your postal code for delivery availability</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 border border-black/30 p-4 last:rounded-b last:border-t-0">
+              <RefreshCcw size={32} />
+              <div>
+                <h4 className="text-base font-medium">Return Delivery</h4>
+                <p className="text-xs font-medium underline cursor-pointer">Details</p>
+                <p className="text-xs mt-1 text-gray-500">Free 30 Days Delivery Returns. Check details</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

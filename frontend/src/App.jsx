@@ -9,6 +9,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import { AuthContext } from "./context/AuthContext";
 import OrderSuccess from "./components/OrderSuccess";
 import ShopPage from "./pages/ShopPage";
+import { useInteractionTracker } from "./components/UseInteractionTracker";
 
 
 const Home = lazy(() => import("./pages/Home"));
@@ -34,6 +35,7 @@ const PageLoader = () => (
 
 const App = () => {
   const { user } = useContext(AuthContext);
+  useInteractionTracker()
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import productRouter from "./src/route/product.routes.js";
 import orderRouter from "./src/route/order.route.js";
-dotenv.config();
+import recommendationRouter from "./src/route/recommendation.route.js";
 
 const app = express();
 connectDB();
@@ -17,7 +17,7 @@ app.use(express.json());
 app.use("/api/auth", userRoutes);
 app.use('/api/products', productRouter);
 app.use('/api/orders', orderRouter);
-
+app.use('/api/recommendations', recommendationRouter); 
 
 app.use(errorHandler);
 const port = process.env.PORT;

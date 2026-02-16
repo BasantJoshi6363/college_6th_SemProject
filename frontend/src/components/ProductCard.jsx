@@ -1,36 +1,46 @@
 import React, { useContext } from 'react';
 import { Heart, Eye, Star } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom'; // Added Link and useNavigate
+import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { WishlistContext } from '../context/WishListContext';
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useContext(CartContext);
   const { wishlistItems, addToWishlist, removeFromWishlist } = useContext(WishlistContext);
+  const { trackInteraction } = useContext(WishlistContext);
   const navigate = useNavigate();
 
-  const isInWishlist = wishlistItems.some((item) => item.id === product.id);
+  const isInWishlist = wishlistItems.some((item) => item._id === product._id);
 
   const handleWishlistToggle = (e) => {
     e.preventDefault(); 
-    e.stopPropagation(); // Stop navigation to detail page
+    e.stopPropagation();
     if (isInWishlist) {
-      removeFromWishlist(product.id);
+      removeFromWishlist(product._id);
     } else {
       addToWishlist(product);
+      trackInteraction(product._id, 'wishlist');
     }
   };
 
   const handleAddToCart = (e) => {
     e.preventDefault();
-    e.stopPropagation(); // Stop navigation to detail page
+    e.stopPropagation();
     addToCart(product);
+    trackInteraction(product._id, 'cart');
+  };
+
+  const handleProductClick = () => {
+    trackInteraction(product._id, 'view');
   };
 
   return (
     <div className="group relative w-full flex-shrink-0 sm:w-[270px]">
-      {/* 1. Wrap Image Container in Link */}
-      <Link to={`/products/${product.id}`} className="block">
+      <Link 
+        to={`/products/${product._id}`} 
+        className="block"
+        onClick={handleProductClick}
+      >
         <div className="relative h-[250px] w-full overflow-hidden rounded bg-[#F5F5F5] flex items-center justify-center p-8">
           
           {/* Action Icons */}
@@ -49,7 +59,7 @@ const ProductCard = ({ product }) => {
           </div>
 
           <img 
-            src={product?.images[0].url} 
+            src={product?.images[0]?.url} 
             alt={product?.name} 
             className="max-h-full object-contain mix-blend-multiply" 
           />
@@ -64,15 +74,24 @@ const ProductCard = ({ product }) => {
         </div>
       </Link>
 
-      {/* 2. Wrap Info in Link */}
       <div className="mt-4 flex flex-col gap-2">
-        <Link to={`/product/${product.id}`}>
+        <Link 
+          to={`/products/${product._id}`}
+          onClick={handleProductClick}
+        >
           <h3 className="font-medium text-black line-clamp-1 hover:text-[#DB4444] transition-colors">
             {product?.name}
           </h3>
         </Link>
         <div className="flex gap-3 font-medium">
-          <span className="text-[#DB4444]">Rs {product?.originalPrice}</span>
+          <span className="text-[#DB4444]">
+            Rs {product?.discountedPrice || product?.originalPrice}
+          </span>
+          {product?.discountedPrice && (
+            <span className="text-gray-500 line-through">
+              Rs {product?.originalPrice}
+            </span>
+          )}
         </div>
       </div>
     </div>

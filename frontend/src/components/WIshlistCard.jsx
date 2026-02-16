@@ -2,7 +2,6 @@ import React, { useContext } from 'react';
 import { Trash2, ShoppingCart, Eye } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { WishlistContext } from '../context/WishListContext';
-
 const WishlistCard = ({ product, isRecommendation = false }) => {
   const { addToCart } = useContext(CartContext);
   const { removeFromWishlist } = useContext(WishlistContext);

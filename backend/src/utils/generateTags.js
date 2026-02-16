@@ -1,20 +1,10 @@
-import mongoose from "mongoose";
-
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB connected");
-  } catch (error) {
-    console.error("DB connection failed:", error.message);
-    process.exit(1);
-  }
-};
-
-export default connectDB;
-
+import mongoose from 'mongoose';
 import Product from "../model/product.model.js"
+import dotenv from "dotenv"
+dotenv.config();
+console.log(process.env.MONGO_URI);
 const addTags = async () => {
-  await mongoose.connect("mongodb+srv://basantjoshi6363:TmHwHcBelKTwc4vb@cluster0.ezlehsb.mongodb.net/ecom");
+  await mongoose.connect(process.env.MONGO_URI);
   console.log('Connected to MongoDB');
   
   const products = await Product.find();
@@ -41,4 +31,4 @@ const addTags = async () => {
   process.exit(0);
 };
 
-// addTags();
+addTags();

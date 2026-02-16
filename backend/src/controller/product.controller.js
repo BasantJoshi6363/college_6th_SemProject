@@ -31,6 +31,20 @@ export const createProduct = async (req, res) => {
       uploadedImages = await uploadMultipleToCloudinary(req.files);
     }
 
+    // ✅ Prepare product data for tag generation
+    const productData = {
+      name,
+      description,
+      originalPrice: Number(originalPrice),
+      discountedPrice: discountedPrice ? Number(discountedPrice) : undefined,
+      category,
+      brand,
+      sizes: Array.isArray(sizes) ? sizes : sizes ? [sizes] : [],
+    };
+
+    // ✅ Auto-generate tags using the static method
+    const generatedTags = Product.generateTags(productData);
+
     // Create product with new schema fields
     const product = new Product({
       name,
@@ -41,15 +55,16 @@ export const createProduct = async (req, res) => {
       stock: stock ? Number(stock) : 0,
       brand,
       images: uploadedImages,
-      // Handle array from FormData
       sizes: Array.isArray(sizes) ? sizes : sizes ? [sizes] : [],
-      // Convert "true"/"false" strings from FormData to Boolean
       isFlash: isFlash === 'true' || isFlash === true,
       isActive: isActive === 'false' || isActive === false ? false : true,
+      tags: generatedTags, // ✅ Add auto-generated tags
     });
 
     // .save() triggers the pre-save middleware to calculate discountedPercent
     await product.save();
+
+    console.log('✅ Product created with tags:', generatedTags); // ✅ Debug log
 
     res.status(201).json({
       success: true,
@@ -211,6 +226,23 @@ export const updateProduct = async (req, res) => {
     if (discountedPrice !== undefined) {
         product.discountedPrice = discountedPrice === "" ? undefined : Number(discountedPrice);
     }
+
+    // ✅ 4. Regenerate tags when product is updated
+    const updatedProductData = {
+      name: product.name,
+      description: product.description,
+      category: product.category,
+      brand: product.brand,
+      originalPrice: product.originalPrice,
+      discountedPrice: product.discountedPrice,
+      sizes: product.sizes,
+    };
+
+    // Generate fresh tags based on updated product data
+    const regeneratedTags = Product.generateTags(updatedProductData);
+    product.tags = regeneratedTags;
+
+    console.log('✅ Product tags regenerated:', regeneratedTags); // ✅ Debug log
 
     // Save triggers the 'pre-save' middleware for discountedPercent
     await product.save();

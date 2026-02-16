@@ -16,7 +16,8 @@ export const WishlistProvider = ({ children }) => {
    const addToWishlist = useCallback((product) => {
     // 1. Check if it's already there BEFORE calling state
     setWishlistItems((prev) => {
-        const isExisting = prev.find(item => item.id === product.id);
+        const isExisting = prev.find(item => item._id === product._id);
+
 
         if (isExisting) {
             toast("Already in wishlist", { icon: 'ℹ️' });
@@ -33,7 +34,8 @@ export const WishlistProvider = ({ children }) => {
 }, []);
 
     const removeFromWishlist = useCallback((productId) => {
-        setWishlistItems((prev) => prev.filter(item => item.id !== productId));
+        setWishlistItems((prev) => prev.filter(item => item._id !== productId)
+);
         toast.error("Removed from wishlist");
     }, []);
 
