@@ -9,9 +9,9 @@ import protect from '../middleware/auth.middleware.js';
 
 const recommendationRouter = express.Router();
 
-recommendationRouter.get('/', getRecommendations);
+recommendationRouter.get('/', protect, getRecommendations);
 recommendationRouter.post('/track', protect, trackInteraction);
 recommendationRouter.post('/update-tags', protect, updateUserTags);
-recommendationRouter.post('/track/batch', batchTrackInteractions); 
+recommendationRouter.post('/track/batch',protect, batchTrackInteractions); 
 
 export default recommendationRouter;
