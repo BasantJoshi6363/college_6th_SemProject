@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useContext } from "react";
+import React, { Suspense, lazy, useContext, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
@@ -10,6 +10,7 @@ import { AuthContext } from "./context/AuthContext";
 import OrderSuccess from "./components/OrderSuccess";
 import ShopPage from "./pages/ShopPage";
 import { useInteractionTracker } from "./components/UseInteractionTracker";
+import FlashSalePage from "./pages/FlashSalePage";
 
 
 const Home = lazy(() => import("./pages/Home"));
@@ -35,7 +36,12 @@ const PageLoader = () => (
 
 const App = () => {
   const { user } = useContext(AuthContext);
+  useEffect(() => {
+    document.title = "EasyMart - Your Ultimate Shopping Companion";
+
+  }, []);
   useInteractionTracker()
+
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -49,6 +55,8 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/products/:id" element={<ProductDetailsPage />} />
+            <Route path="/flash" element={<FlashSalePage/>}/>
+            <Route path="/products" element={<ShopPage />} />
             {/* <Route path="/shop" element={<ShopPage />} /> */}
 
             <Route

@@ -2,6 +2,7 @@ import React, { useContext, useRef } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { CartContext } from '../context/CartContext';
+import { Link } from 'react-router-dom';
 
 const FlashSale = ({ products }) => {
   const scrollRef = useRef(null);
@@ -66,9 +67,9 @@ const FlashSale = ({ products }) => {
       </div>
 
       <div className="mt-12 flex justify-center">
-        <button className="rounded bg-[#DB4444] px-12 py-4 text-white hover:bg-red-600 transition-colors">
+        <Link to="/flash" className="rounded bg-[#DB4444] px-12 py-4 text-white hover:bg-red-600 transition-colors">
           View All Products
-        </button>
+        </Link >
       </div>
     </section>
   );

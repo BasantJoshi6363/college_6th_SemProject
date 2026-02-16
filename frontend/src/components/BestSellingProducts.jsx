@@ -39,11 +39,11 @@ const BestSellingProduct = ({ products }) => {
         
       </div>
 
-      <div className="mt-16 flex justify-center">
+      {/* <div className="mt-16 flex justify-center">
         <button className="rounded bg-[#DB4444] px-12 py-4 text-white hover:bg-red-600 transition-colors font-medium">
           View All Products
         </button>
-      </div>
+      </div> */}
     </section>
   );
 };

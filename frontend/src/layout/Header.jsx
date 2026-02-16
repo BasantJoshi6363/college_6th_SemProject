@@ -99,7 +99,7 @@ const MainNavbar = () => {
       <div className="mx-auto max-w-7xl flex items-center justify-between px-4">
         
         <Link to="/" className="flex-shrink-0">
-          <h1 className="text-2xl font-bold tracking-wider">EasyMart</h1>
+          <h1 className="text-2xl font-bold tracking-wider">TechVerse</h1>
         </Link>
 
         <ul className="hidden md:flex items-center gap-8">
@@ -250,7 +250,7 @@ const MainNavbar = () => {
 const Header = () => {
   return (
     <header>
-      <TopHeader />
+      {/* <TopHeader /> */}
       <MainNavbar />
     </header>
   );

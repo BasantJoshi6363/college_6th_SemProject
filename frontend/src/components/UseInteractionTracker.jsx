@@ -1,45 +1,35 @@
-// hooks/useInteractionTracker.js
 import { useEffect } from 'react';
 import axios from 'axios';
 
 export const useInteractionTracker = () => {
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const pending = JSON.parse(
-        localStorage.getItem('pending_interactions') || '[]'
-      );
-      
+    const syncData = async () => {
+      const pending = JSON.parse(localStorage.getItem('pending_interactions') || '[]');
       if (pending.length === 0) return;
-      
+
+      const token = localStorage.getItem('google-token');
+      if (!token) return; 
+
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        
-        for (const interaction of pending) {
-          await axios.post('/api/recommendations/track', interaction, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-        
-        localStorage.removeItem('pending_interactions');
-        
-        const pendingTags = JSON.parse(
-          localStorage.getItem('pending_tags') || '[]'
+        const { data } = await axios.post(
+          'http://localhost:5000/api/recommendations/track/batch', 
+          { interactions: pending },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        
-        if (pendingTags.length > 0) {
-          await axios.post('/api/recommendations/update-tags', 
-            { tags: pendingTags },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          localStorage.removeItem('pending_tags');
+
+        if (data.success) {
+          localStorage.removeItem('pending_interactions');
+          console.log("✅ Successfully synced interactions and updated user tags");
         }
-        
       } catch (error) {
-        console.error('Error syncing interactions:', error);
+        console.error('❌ Sync failed:', error.response?.data || error.message);
       }
-    }, 60000);
+    };
+
+    const interval = setInterval(syncData, 30000); 
     
+    syncData();
+
     return () => clearInterval(interval);
   }, []);
 };

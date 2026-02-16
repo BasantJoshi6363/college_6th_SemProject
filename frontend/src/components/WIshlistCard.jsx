@@ -6,7 +6,6 @@ const WishlistCard = ({ product, isRecommendation = false }) => {
   const { addToCart } = useContext(CartContext);
   const { removeFromWishlist } = useContext(WishlistContext);
 
-  // Helper to handle the "Add to Cart" with quantity 1
   const handleAddToCart = () => {
     addToCart({ ...product, quantity: 1 });
   };
@@ -15,7 +14,6 @@ const WishlistCard = ({ product, isRecommendation = false }) => {
     <div className="group w-full">
       <div className="relative h-[250px] w-full overflow-hidden rounded bg-[#F5F5F5] flex items-center justify-center p-8">
         
-        {/* Dynamic Discount Badge based on your schema's percentage */}
         {product.discountedPercent > 0 && (
           <span className="absolute left-3 top-3 rounded bg-[#DB4444] px-3 py-1 text-xs text-white">
             -{product.discountedPercent}%
@@ -24,15 +22,13 @@ const WishlistCard = ({ product, isRecommendation = false }) => {
         
         <div className="absolute right-3 top-3">
           <button 
-            // Using product._id for Mongoose compatibility
             onClick={() => !isRecommendation && removeFromWishlist(product._id)}
             className="rounded-full bg-white p-2 hover:bg-[#DB4444] hover:text-white transition-colors cursor-pointer shadow-sm"
           >
-            {isRecommendation ? <Eye size={20} /> : <Trash2 size={20} />}
+            {isRecommendation ? <Eye to={`/product/${product._id}`} size={20} /> : <Trash2 size={20} />}
           </button>
         </div>
 
-        {/* Updated Image mapping: images[0].url */}
         <img 
           src={product.images?.[0]?.url || '/placeholder.png'} 
           alt={product.name} 
@@ -49,18 +45,16 @@ const WishlistCard = ({ product, isRecommendation = false }) => {
       </div>
 
       <div className="mt-4 flex flex-col gap-2">
-        {/* Changed title to name */}
         <h3 className="font-semibold text-base line-clamp-1 text-black">{product.name}</h3>
         
         <div className="flex gap-3 items-center">
-          {/* Price mapping for Discount vs Original */}
           <span className="text-[#DB4444] font-medium">
-            ${product.discountedPrice || product.originalPrice}
+            Rs {product.discountedPrice || product.originalPrice}
           </span>
           
           {product.discountedPrice && (
             <span className="text-gray-400 line-through text-sm">
-              ${product.originalPrice}
+              Rs {product.originalPrice}
             </span>
           )}
         </div>

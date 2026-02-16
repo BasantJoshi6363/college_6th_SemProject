@@ -3,11 +3,12 @@ import { useParams } from 'react-router-dom';
 import { Minus, Plus, Heart, Truck, RefreshCcw, Star, Loader2 } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { WishlistContext } from '../context/WishListContext';
+import ExploreProducts from '../components/ExploreOurProduct';
 import { RecommendationContext } from '../context/ReccomendationContext';
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
-  const { trackInteraction } = useContext(RecommendationContext);
+  const { trackInteraction, getPersonalizedRecommendations } = useContext(RecommendationContext);
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,9 +16,16 @@ const ProductDetailsPage = () => {
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
 
+  const [recommendedItems, setRecommendedItems] = useState([]);
+  const [recLoading, setRecLoading] = useState(false);
+
   const { addToCart } = useContext(CartContext);
   const { wishlistItems, addToWishlist, removeFromWishlist } = useContext(WishlistContext);
 
+  // Check if product is in wishlist
+  const isInWishlist = wishlistItems.some(item => item._id === product?._id);
+
+  // Fetch product data
   useEffect(() => {
     const getProduct = async () => {
       try {
@@ -28,11 +36,11 @@ const ProductDetailsPage = () => {
           setProduct(result.data);
           setMainImage(result.data.images[0]?.url || '');
 
-          if (result.data.sizes && result.data.sizes.length > 0) {
+          if (result.data.sizes?.length > 0) {
             setSelectedSize(result.data.sizes[0]);
           }
-          
-          // ✅ Track view interaction
+
+          // Track product view
           trackInteraction(id, 'view');
         }
       } catch (err) {
@@ -46,6 +54,47 @@ const ProductDetailsPage = () => {
     window.scrollTo(0, 0);
   }, [id, trackInteraction]);
 
+  // Fetch recommended products
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (!id) return;
+
+      setRecLoading(true);
+      try {
+        const recommendations = await getPersonalizedRecommendations([id], 4);
+        setRecommendedItems(recommendations || []);
+      } catch (err) {
+        console.error("Recommendation error:", err);
+        setRecommendedItems([]);
+      } finally {
+        setRecLoading(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [id, getPersonalizedRecommendations]);
+
+  // Handle Add to Cart
+  const handleAddToCart = () => {
+    if (!product) return;
+    const cartItem = { ...product, quantity };
+    if (product.sizes?.length > 0) cartItem.selectedSize = selectedSize;
+
+    addToCart(cartItem);
+    trackInteraction(product._id, 'cart');
+  };
+
+  // Handle Wishlist Toggle
+  const handleWishlistToggle = () => {
+    if (!product) return;
+    if (isInWishlist) {
+      removeFromWishlist(product._id);
+    } else {
+      addToWishlist(product);
+      trackInteraction(product._id, 'wishlist');
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-4">
@@ -58,30 +107,6 @@ const ProductDetailsPage = () => {
   if (!product) {
     return <div className="h-screen flex items-center justify-center">Product not found.</div>;
   }
-
-  const isInWishlist = wishlistItems.some(item => item._id === product._id);
-
-  const handleAddToCart = () => {
-    const cartItem = { ...product, quantity };
-
-    if (product.sizes && product.sizes.length > 0) {
-      cartItem.selectedSize = selectedSize;
-    }
-
-    addToCart(cartItem);
-    
-    // ✅ Track cart interaction
-    trackInteraction(product._id, 'cart');
-  };
-
-  const handleWishlistToggle = () => {
-    if (isInWishlist) {
-      removeFromWishlist(product._id);
-    } else {
-      addToWishlist(product);
-      trackInteraction(product._id, 'wishlist');
-    }
-  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-20">
@@ -118,17 +143,16 @@ const ProductDetailsPage = () => {
         <div className="w-full lg:w-[400px] order-3">
           <h1 className="text-3xl font-bold mb-4 text-black">{product.name}</h1>
 
+          {/* Ratings, Brand, Stock */}
           <div className="flex items-center gap-4 mb-4">
             <div className="flex text-[#FFAD33]">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} size={18} fill={i < 4 ? "currentColor" : "none"} />
               ))}
             </div>
-
             <span className="text-sm text-gray-400 border-r border-black/50 pr-4 font-medium uppercase">
               {product.brand || 'No Brand'}
             </span>
-
             <span className={`text-sm font-medium ${product.stock > 0 ? 'text-[#00FF66]' : 'text-[#DB4444]'}`}>
               {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
             </span>
@@ -146,16 +170,17 @@ const ProductDetailsPage = () => {
             )}
           </div>
 
+          {/* Description */}
           <p className="text-sm leading-7 mb-8 border-b border-black/30 pb-8 text-gray-600">
             {product.description}
           </p>
 
           {/* Sizes */}
-          {product.sizes && product.sizes.length > 0 && (
+          {product.sizes?.length > 0 && (
             <div className="flex items-center gap-6 mb-10">
               <span className="text-xl font-medium">Size:</span>
               <div className="flex gap-3 flex-wrap">
-                {product.sizes.map((s) => (
+                {product.sizes.map(s => (
                   <button
                     key={s}
                     onClick={() => setSelectedSize(s)}
@@ -228,6 +253,28 @@ const ProductDetailsPage = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Recommended Products */}
+      <div className="mt-24">
+        {recLoading ? (
+          <div className="flex items-center justify-center gap-4">
+            <Loader2 size={32} className="animate-spin text-[#DB4444]" />
+            <span className="text-gray-500 font-medium">Loading recommendations...</span>
+          </div>
+        ) : recommendedItems.length > 0 ? (
+          <ExploreProducts
+            title="Recommended For You"
+            products={recommendedItems}
+            wishlistItems={wishlistItems}
+            addToWishlist={addToWishlist}
+            removeFromWishlist={removeFromWishlist}
+            addToCart={addToCart}
+            trackInteraction={trackInteraction}
+          />
+        ) : (
+          <p className="text-gray-400 mt-6">Browse more to see recommendations!</p>
+        )}
       </div>
     </div>
   );

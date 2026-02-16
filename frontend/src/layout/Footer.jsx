@@ -11,7 +11,7 @@ const Footer = () => {
         {/* Brand / Subscribe */}
         <div className="flex flex-col gap-2">
           <Link to={"/"}>
-            <h2 className="text-xl font-bold tracking-wider">EasyMart</h2>
+            <h2 className="text-xl font-bold tracking-wider">TechVerse</h2>
           </Link>
           <h3 className="text-sm font-medium">Subscribe</h3>
           <p className="text-sm font-light">Get 10% off your first order</p>
@@ -30,7 +30,7 @@ const Footer = () => {
         {/* Support */}
         <FooterSection title="Support">
           <p className="text-sm leading-5">Kapan, Kathmandu</p>
-          <FooterLink href="mailto:easymart@gmail.com">easymart@gmail.com</FooterLink>
+          <FooterLink href="mailto:easymart@gmail.com">techverse@gmail.com</FooterLink>
           <FooterLink href="tel:+977974125010">+977 974125010</FooterLink>
         </FooterSection>
 

@@ -4,7 +4,6 @@ import { AuthContext } from '../context/AuthContext';
 import { Loader2, Package, ChevronRight, Clock, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// --- SUB-COMPONENT: MY ORDERS ---
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -89,11 +88,9 @@ const MyOrders = () => {
   );
 };
 
-// --- MAIN PROFILE PAGE ---
 const ProfilePage = () => {
   const { user, updateProfile } = useContext(AuthContext);
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'orders'
-
+const [activeTab, setActiveTab] = useState('orders'); 
   const nameParts = user?.name?.split(" ") || ["", ""];
   
   const [formData, setFormData] = useState({
@@ -137,7 +134,6 @@ const ProfilePage = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 md:py-20">
-      {/* Breadcrumb & Welcome */}
       <div className="flex justify-between items-center mb-10 md:mb-20">
         <div className="text-sm text-gray-500">
           <span>Home</span> <span className="mx-2">/</span> <span className="text-black font-medium">My Account</span>
@@ -148,29 +144,28 @@ const ProfilePage = () => {
       </div>
 
       <div className="flex flex-col md:flex-row gap-10">
-        {/* Sidebar */}
         <aside className="w-full md:w-64 space-y-8">
           <div>
             <h3 className="font-bold text-base mb-4 text-black">Manage My Account</h3>
             <ul className="flex flex-col gap-3 ml-4">
+                  <li 
+                onClick={() => setActiveTab('orders')}
+                className={`cursor-pointer text-sm transition-colors hover:text-[#DB4444] ${activeTab === 'orders' ? 'text-[#DB4444] font-medium' : 'text-gray-500'}`}
+              >
+                My Orders
+              </li>
               <li 
                 onClick={() => setActiveTab('profile')}
                 className={`cursor-pointer text-sm transition-colors hover:text-[#DB4444] ${activeTab === 'profile' ? 'text-[#DB4444] font-medium' : 'text-gray-500'}`}
               >
                 My Profile
               </li>
-              <li 
-                onClick={() => setActiveTab('orders')}
-                className={`cursor-pointer text-sm transition-colors hover:text-[#DB4444] ${activeTab === 'orders' ? 'text-[#DB4444] font-medium' : 'text-gray-500'}`}
-              >
-                My Orders
-              </li>
+          
             </ul>
           </div>
           <h3 className="font-bold text-base text-black cursor-pointer hover:text-[#DB4444]">My WishList</h3>
         </aside>
 
-        {/* Main Content Area */}
         <main className="flex-1 bg-white shadow-sm rounded-lg p-6 md:p-14 border border-gray-100">
           {activeTab === 'profile' ? (
             <>

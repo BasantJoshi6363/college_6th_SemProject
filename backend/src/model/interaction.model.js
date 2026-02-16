@@ -1,4 +1,3 @@
-// models/interaction.model.js
 import mongoose from "mongoose";
 
 const interactionSchema = new mongoose.Schema(
@@ -10,7 +9,7 @@ const interactionSchema = new mongoose.Schema(
       enum: ["view", "purchase", "cart", "wishlist"],
       required: true 
     },
-    weight: { type: Number, default: 1 }, // Different actions have different weights
+    weight: { type: Number, default: 1 }, 
   },
   { timestamps: true }
 );

@@ -5,16 +5,19 @@ const userSchema = new mongoose.Schema(
   {
     name: String,
     email: { type: String, unique: true },
-    password: {type : String},
-    isAdmin : {
+    password: { type: String },
+    isAdmin: {
       type: Boolean,
-      default : false
+      default: false
     },
     permanentAddress: String,
     temporaryAddress: String,
     phoneNumber: String,
     profilePicture: String,
-    tags: [String],
+    tags: [{
+      name: { type: String },
+      count: { type: Number, default: 1 }
+    }]
   },
   { timestamps: true }
 );

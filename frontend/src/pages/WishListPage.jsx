@@ -10,37 +10,47 @@ const WishlistPage = () => {
   const { addToCart } = useContext(CartContext);
   const { 
     trackInteraction, 
-    getPersonalizedRecommendations
+    getPersonalizedRecommendations,
+    syncInteractions
   } = useContext(RecommendationContext);
   
   const [recommendedItems, setRecommendedItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Track wishlist items as "wishlist" interaction
-  useEffect(() => {
-    wishlistItems.forEach(item => {
-      trackInteraction(item._id, 'wishlist');
-    });
-  }, [wishlistItems, trackInteraction]);
 
-  // Fetch personalized recommendations
   useEffect(() => {
-    const fetchRecommendations = async () => {
-      setLoading(true);
-      
-      // Exclude current wishlist items from recommendations
-      const excludeIds = wishlistItems.map(item => item._id);
-      
-      const recommendations = await getPersonalizedRecommendations(excludeIds, 4);
-      console.log(recommendations)
-      setRecommendedItems(recommendations);
-      
+  const fetchRecommendations = async () => {
+    if (wishlistItems.length === 0) {
+      setRecommendedItems([]);
       setLoading(false);
-    };
+      return;
+    }
 
-    fetchRecommendations();
-  }, [wishlistItems, getPersonalizedRecommendations]);
+    setLoading(true);
 
+    try {
+      const excludeIds = wishlistItems.map(item => item._id);
+
+      // ✅ Sync interactions before fetching
+      await syncInteractions();
+
+      const recommendations = await getPersonalizedRecommendations(excludeIds, 4);
+
+      console.log("Recommended:", recommendations);
+
+      setRecommendedItems(recommendations || []);
+    } catch (error) {
+      console.error("Recommendation error:", error);
+      setRecommendedItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchRecommendations();
+}, [wishlistItems, syncInteractions, getPersonalizedRecommendations]);
+
+  
   const handleMoveAllToBag = () => {
     wishlistItems.forEach(item => {
       addToCart(item);

@@ -3,7 +3,6 @@ import User from "../model/user.model.js";
 
 const protect = async (req, res, next) => {
   try {
-    // console.log("first")
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {

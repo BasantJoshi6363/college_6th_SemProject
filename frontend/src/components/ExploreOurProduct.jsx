@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import ProductCard from './ProductCard';
+import { Link } from 'react-router-dom';
 
 const ExploreProducts = ({ products }) => {
   return (
@@ -40,9 +41,9 @@ const ExploreProducts = ({ products }) => {
       </div>
 
       <div className="mt-16 flex justify-center">
-        <button className="rounded bg-[#DB4444] px-12 py-4 text-white hover:bg-red-600 transition-colors font-medium">
+        <Link to="/products" className="rounded bg-[#DB4444] px-12 py-4 text-white hover:bg-red-600 transition-colors font-medium">
           View All Products
-        </button>
+        </Link>
       </div>
     </section>
   );

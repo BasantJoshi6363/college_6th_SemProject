@@ -3,17 +3,19 @@ import { Heart, Eye, Star } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { WishlistContext } from '../context/WishListContext';
+import { RecommendationContext } from '../context/ReccomendationContext';
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useContext(CartContext);
   const { wishlistItems, addToWishlist, removeFromWishlist } = useContext(WishlistContext);
-  const { trackInteraction } = useContext(WishlistContext);
+  const { trackInteraction } = useContext(RecommendationContext);
+
   const navigate = useNavigate();
 
   const isInWishlist = wishlistItems.some((item) => item._id === product._id);
 
   const handleWishlistToggle = (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
     e.stopPropagation();
     if (isInWishlist) {
       removeFromWishlist(product._id);
@@ -36,20 +38,19 @@ const ProductCard = ({ product }) => {
 
   return (
     <div className="group relative w-full flex-shrink-0 sm:w-[270px]">
-      <Link 
-        to={`/products/${product._id}`} 
+      <Link
+        to={`/products/${product._id}`}
         className="block"
         onClick={handleProductClick}
       >
         <div className="relative h-[250px] w-full overflow-hidden rounded bg-[#F5F5F5] flex items-center justify-center p-8">
-          
+
           {/* Action Icons */}
           <div className="absolute right-3 top-3 flex flex-col gap-2 z-10">
-            <button 
+            <button
               onClick={handleWishlistToggle}
-              className={`rounded-full p-1.5 transition-colors shadow-sm cursor-pointer ${
-                isInWishlist ? 'bg-[#DB4444] text-white' : 'bg-white text-black hover:bg-[#DB4444] hover:text-white'
-              }`}
+              className={`rounded-full p-1.5 transition-colors shadow-sm cursor-pointer ${isInWishlist ? 'bg-[#DB4444] text-white' : 'bg-white text-black hover:bg-[#DB4444] hover:text-white'
+                }`}
             >
               <Heart size={20} fill={isInWishlist ? "currentColor" : "none"} />
             </button>
@@ -58,14 +59,14 @@ const ProductCard = ({ product }) => {
             </button>
           </div>
 
-          <img 
-            src={product?.images[0]?.url} 
-            alt={product?.name} 
-            className="max-h-full object-contain mix-blend-multiply" 
+          <img
+            src={product?.images[0]?.url}
+            alt={product?.name}
+            className="max-h-full object-contain mix-blend-multiply"
           />
 
           {/* Add to Cart Button */}
-          <button 
+          <button
             onClick={handleAddToCart}
             className="absolute bottom-0 w-full translate-y-full bg-black py-2 text-white transition-all group-hover:translate-y-0 cursor-pointer"
           >
@@ -75,7 +76,7 @@ const ProductCard = ({ product }) => {
       </Link>
 
       <div className="mt-4 flex flex-col gap-2">
-        <Link 
+        <Link
           to={`/products/${product._id}`}
           onClick={handleProductClick}
         >

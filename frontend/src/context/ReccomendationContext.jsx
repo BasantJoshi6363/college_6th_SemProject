@@ -19,8 +19,6 @@ export const RecommendationProvider = ({ children }) => {
   const [personalizedWishlist, setPersonalizedWishlist] = useState([]);
   
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  // console.log(recommendations)
-  // Track interaction (stores in localStorage first)
   const trackInteraction = useCallback((productId, type) => {
     const pending = JSON.parse(
       localStorage.getItem('pending_interactions') || '[]'
@@ -35,7 +33,6 @@ export const RecommendationProvider = ({ children }) => {
     localStorage.setItem('pending_interactions', JSON.stringify(pending));
   }, []);
 
-  // Sync interactions with backend
   const syncInteractions = useCallback(async () => {
     const pending = JSON.parse(
       localStorage.getItem('pending_interactions') || '[]'
@@ -60,27 +57,13 @@ export const RecommendationProvider = ({ children }) => {
       
       // Clear after successful sync
       localStorage.removeItem('pending_interactions');
-      console.log('✅ Interactions synced');
+      // console.log('✅ Interactions synced');
       
     } catch (error) {
       console.error('Error syncing interactions:', error);
     }
   }, [baseUrl]);
-
-  // Auto-sync every 60 seconds
-  useEffect(() => {
-    const interval = setInterval(syncInteractions, 60000);
-    
-    // Also sync on unmount
-    fetchRecommendations()
-    return () => {
-      clearInterval(interval);
-      syncInteractions();
-    };
-  }, [syncInteractions]);
-
-  // Fetch recommendations
-  const fetchRecommendations = useCallback(async ({ limit = 8, excludeIds = [] } = {}) => {
+   const fetchRecommendations = useCallback(async ({ limit = 8, excludeIds = [] } = {}) => {
     setLoading(true);
     
     try {
@@ -98,10 +81,9 @@ export const RecommendationProvider = ({ children }) => {
           }
         }
       );
-      console.log(data)
       if (data.success) {
         setRecommendations(data.products);
-        setStrategy(data.strategy);
+        // setStrategy(data.strategy);
       }
     } catch (error) {
       console.error('Error fetching recommendations:', error);
@@ -111,33 +93,49 @@ export const RecommendationProvider = ({ children }) => {
     }
   }, [baseUrl]);
 
-  // Get recommendations for a specific user based on their wishlist/cart
-  const getPersonalizedRecommendations = useCallback(async (excludeIds = [], limit = 4) => {
-    try {
-      const token = localStorage.getItem('google-token');
-      const sessionId = getSessionId();
-      
-      const excludeIdsParam = excludeIds.length > 0 ? excludeIds.join(',') : '';
-      
-      const { data } = await axios.get(
-        `${baseUrl}/recommendations?limit=${limit}&excludeIds=${excludeIdsParam}`,
-        {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : '',
-            'x-session-id': sessionId
-          }
+  useEffect(() => {
+  fetchRecommendations({ limit: 8 });
+  
+  const interval = setInterval(syncInteractions, 30000);
+  return () => {
+    clearInterval(interval);
+    syncInteractions();
+  };
+}, [syncInteractions, fetchRecommendations]); // Add dependencies
+
+  // Fetch recommendations
+ 
+
+ const getPersonalizedRecommendations = useCallback(async (excludeIds = [], limit = 4) => {
+  try {
+    const token = localStorage.getItem('google-token');
+    const sessionId = getSessionId();
+    
+    const excludeIdsParam = excludeIds.length > 0 ? excludeIds.join(',') : '';
+    
+    const { data } = await axios.get(
+      `${baseUrl}/recommendations?limit=${limit}&excludeIds=${excludeIdsParam}`,
+      {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'x-session-id': sessionId
         }
-      );
-      // console.log('Personalized recommendations response:', data);
-      setPersonalizedWishlist(data.products);
-      
-      
-      return data.success ? data.products : [];
-    } catch (error) {
-      console.error('Error fetching personalized recommendations:', error);
-      return [];
-    }
-  }, [baseUrl]);
+      }
+    );
+
+    console.log("Personalized API response:", data);
+
+    setPersonalizedWishlist(data.products);
+
+    // ✅ FIXED
+    return data.products || [];
+
+  } catch (error) {
+    console.error('Error fetching personalized recommendations:', error);
+    return [];
+  }
+}, [baseUrl]);
+
 
   const value = useMemo(
     () => ({
