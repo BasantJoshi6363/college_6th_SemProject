@@ -36,10 +36,10 @@ const PageLoader = () => (
 
 const App = () => {
   const { user } = useContext(AuthContext);
-  useEffect(() => {
-    document.title = "EasyMart - Your Ultimate Shopping Companion";
+  // useEffect(() => {
+  //   document.title = "EasyMart - Your Ultimate Shopping Companion";
 
-  }, []);
+  // }, []);
   useInteractionTracker()
 
 
