@@ -13,11 +13,9 @@ export const AuthProvider = ({ children }) => {
 
   const navigate = useNavigate();
 
-  // Load auth state from localStorage once on mount
   useEffect(() => {
     const storedToken = localStorage.getItem("google-token");
     const storedUser = localStorage.getItem("user");
-   
 
     if (storedToken && storedUser) {
       try {
@@ -25,15 +23,13 @@ export const AuthProvider = ({ children }) => {
         setUser(JSON.parse(storedUser));
       } catch (e) {
         console.error("Failed to parse user data", e);
-        localStorage.clear(); // Clear corrupt data
+        localStorage.clear();
       }
     }
     setLoading(false);
   }, []);
 
-  // Helper to sanitize and save data
   const saveAuthData = useCallback((userData, tokenData) => {
-    console.log(userData)
     const sanitizedUser = {
       _id: userData._id,
       name: userData.name,
@@ -50,7 +46,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("user", JSON.stringify(sanitizedUser));
   }, []);
 
-  // LOGIN
   const login = useCallback(async (email, password) => {
     const toastId = toast.loading("Logging in...");
     try {
@@ -66,7 +61,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, [navigate, saveAuthData]);
 
-  // REGISTER
   const register = useCallback(async (name, email, password) => {
     const toastId = toast.loading("Creating account...");
     try {
@@ -82,17 +76,42 @@ export const AuthProvider = ({ children }) => {
     }
   }, [navigate, saveAuthData]);
 
-  // UPDATE PROFILE
+  // NEW: FORGOT PASSWORD (Request Email)
+  const forgotPassword = useCallback(async (email) => {
+    const toastId = toast.loading("Sending reset link...");
+    try {
+      const { data } = await axios.post(`${baseUrl}/forgot-password`, { email });
+      toast.success("Reset link sent to your email!", { id: toastId });
+      return true;
+    } catch (error) {
+      const message = error.response?.data?.message || "Failed to send email";
+      toast.error(message, { id: toastId });
+      return false;
+    }
+  }, []);
+
+  // NEW: RESET PASSWORD (Submit New Password)
+  const resetPassword = useCallback(async (token, password) => {
+    const toastId = toast.loading("Updating password...");
+    try {
+      await axios.put(`${baseUrl}/reset-password/${token}`, { password });
+      toast.success("Password updated! Please login.", { id: toastId });
+      navigate("/auth"); // Redirect to login page
+      return true;
+    } catch (error) {
+      const message = error.response?.data?.message || "Reset link expired or invalid";
+      toast.error(message, { id: toastId });
+      return false;
+    }
+  }, [navigate]);
+
   const updateProfile = useCallback(async (updateData) => {
     const toastId = toast.loading("Updating profile...");
     try {
       const { data } = await axios.put(`${baseUrl}/update`, updateData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      // Update state and local storage
-      saveAuthData(data.user); // reuse the helper, keep current token
-      
+      saveAuthData(data.user); 
       toast.success("Profile updated successfully!", { id: toastId });
       return true;
     } catch (error) {
@@ -103,29 +122,21 @@ export const AuthProvider = ({ children }) => {
   }, [token, saveAuthData]);
 
   const googleLogin = useCallback(async (code) => {
-  const toastId = toast.loading("Signing in with Google...");
-  try {
-    const { data } = await axios.post(`${baseUrl}/google`, { code });
-    // console.log(data)
-
-    if (!data.success) {
-      throw new Error(data.message);
+    const toastId = toast.loading("Signing in with Google...");
+    try {
+      const { data } = await axios.post(`${baseUrl}/google`, { code });
+      if (!data.success) throw new Error(data.message);
+      saveAuthData(data.user, data.token);
+      toast.success("Google login successful!", { id: toastId });
+      navigate("/");
+      return data;
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || "Google login failed";
+      toast.error(message, { id: toastId });
+      return null;
     }
+  }, [navigate, saveAuthData]);
 
-    saveAuthData(data.user, data.token);
-
-    toast.success("Google login successful!", { id: toastId });
-    navigate("/");
-    return data;
-  } catch (error) {
-    const message = error.response?.data?.message || error.message || "Google login failed";
-    toast.error(message, { id: toastId });
-    return null;
-  }
-}, [navigate, saveAuthData]);
-
-
-  // LOGOUT
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
@@ -138,17 +149,18 @@ export const AuthProvider = ({ children }) => {
   const isAuthenticated = !!token;
 
   const value = useMemo(() => ({
-  user, 
-  token, 
-  loading, 
-  isAuthenticated, 
-  login, 
-  register, 
-  logout, 
-  updateProfile,
-  googleLogin 
-}), [user, token, loading, isAuthenticated, login, register, logout, updateProfile, googleLogin]);
-
+    user, 
+    token, 
+    loading, 
+    isAuthenticated, 
+    login, 
+    register, 
+    logout, 
+    updateProfile,
+    googleLogin,
+    forgotPassword, // Added
+    resetPassword  // Added
+  }), [user, token, loading, isAuthenticated, login, register, logout, updateProfile, googleLogin, forgotPassword, resetPassword]);
 
   return (
     <AuthContext.Provider value={value}>

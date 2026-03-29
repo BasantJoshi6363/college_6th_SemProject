@@ -11,6 +11,7 @@ import OrderSuccess from "./components/OrderSuccess";
 import ShopPage from "./pages/ShopPage";
 import { useInteractionTracker } from "./components/UseInteractionTracker";
 import FlashSalePage from "./pages/FlashSalePage";
+import ResetPasswordPage from "./pages/PasswordResetPage";
 
 
 const Home = lazy(() => import("./pages/Home"));
@@ -67,7 +68,7 @@ const App = () => {
                 </PublicRoute>
               }
             />
-
+<Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             {/* PROTECTED USER ROUTES */}
             <Route
               path="/profile"

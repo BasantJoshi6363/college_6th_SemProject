@@ -1,6 +1,8 @@
 import User from "../model/user.model.js";
 import generateToken from "../utils/generateToken.js";
 import { OAuth2Client } from "google-auth-library";
+import crypto from "crypto";
+import sendEmail from "../utils/sendEmail.js";
 
 process.loadEnvFile();
 
@@ -322,5 +324,90 @@ export const deleteUser = async (req, res) => {
       success: false, 
       message: error.message 
     });
+  }
+};
+
+
+// @desc    Forgot Password - Send Email
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "No user with that email" });
+    }
+
+    // 1. Generate a random reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    // 2. Hash and set to resetPasswordToken field in DB
+    user.resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    // 3. Set expiration (15 minutes)
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    // 4. Create reset URL (Frontend link)
+    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+
+    const message = `
+      <h1>You requested a password reset</h1>
+      <p>Please click the link below to reset your password. This link expires in 15 minutes.</p>
+      <a href=${resetUrl} clicktracking=off>${resetUrl}</a>
+    `;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Password Reset Request",
+        html: message,
+      });
+
+      res.status(200).json({ success: true, message: "Email sent successfully" });
+    } catch (error) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      return res.status(500).json({ success: false, message: "Email could not be sent" });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Reset Password - Verify Token & Update
+export const resetPassword = async (req, res) => {
+  try {
+    // Hash the token from the URL to match the one in DB
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Invalid or expired token" });
+    }
+
+    // Set new password (the pre-save hook in your model will hash this automatically)
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Password reset successful! You can now login." });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

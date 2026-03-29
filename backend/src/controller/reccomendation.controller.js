@@ -43,118 +43,62 @@ export const getRecommendations = async (req, res) => {
     const userId = req.user?._id;
     const { limit = 10, strategy = 'hybrid' } = req.query;
 
-    let recommendations = [];
-
     if (!userId) {
-      // For non-logged users: show popular products
-      recommendations = await Product.find()
-        .sort({ purchaseCount: -1, viewCount: -1 })
-        .limit(limit);
-
-      return res.json({
-        products: recommendations,
-        strategy: 'popularity',
-        message: 'Login for personalized recommendations'
-      });
+      // ADD RANDOMIZATION for guests
+      const recommendations = await Product.aggregate([
+        { $sort: { purchaseCount: -1, viewCount: -1 } },
+        { $limit: 50 },
+        { $sample: { size: parseInt(limit) } } // Pick random from the top 50
+      ]);
+      return res.json({ products: recommendations, strategy: 'popularity' });
     }
 
     const user = await User.findById(userId);
+    
+    // FIX: Extract tag names from the object array
+    const userTagNames = user.tags.map(t => t.name); 
 
-    if (strategy === 'content' || strategy === 'hybrid') {
-      // Content-based filtering
-      if (user.tags && user.tags.length > 0) {
-        const products = await Product.find({
-          tags: { $in: user.tags }
-        }).limit(50);
+    let recommendations = [];
 
-        const scoredProducts = products.map(product => ({
-          product,
-          score: calculateSimilarity(user.tags, product.tags) * 10
-        }));
-
-        recommendations.push(...scoredProducts);
-      }
+    if (userTagNames.length > 0) {
+      // Content-based
+      const products = await Product.find({ tags: { $in: userTagNames } }).limit(50);
+      const scoredProducts = products.map(product => ({
+        product,
+        score: calculateSimilarity(userTagNames, product.tags) * 10
+      }));
+      recommendations.push(...scoredProducts);
     }
 
-    if (strategy === 'collaborative' || strategy === 'hybrid') {
-      // Collaborative filtering
-      const similarUsers = await findSimilarUsers(userId, user.tags);
+    // ... Collaborative Logic (Update it to use userTagNames too) ...
 
-      if (similarUsers.length > 0) {
-        const similarUserIds = similarUsers.map(u => u.userId);
-
-        // Get products that similar users interacted with
-        const interactions = await Interaction.find({
-          user: { $in: similarUserIds }
-        }).populate('product');
-
-        const productScores = {};
-
-        interactions.forEach(interaction => {
-          if (!interaction.product) return;
-
-          const productId = interaction.product._id.toString();
-          const userSimilarity = similarUsers.find(
-            u => u.userId.toString() === interaction.user.toString()
-          )?.similarity || 0;
-
-          const score = WEIGHTS[interaction.type] * userSimilarity;
-
-          if (!productScores[productId]) {
-            productScores[productId] = {
-              product: interaction.product,
-              score: 0
-            };
-          }
-
-          productScores[productId].score += score;
-        });
-
-        recommendations.push(...Object.values(productScores));
-      }
-    }
-
-    const userInteractions = await Interaction.find({
-      user: userId,
-      type: 'purchase'
-    }).select('product');
-
-    const purchasedProductIds = new Set(
-      userInteractions.map(i => i.product.toString())
-    );
-
-    const uniqueRecommendations = [];
+    // Filter out purchased items and handle uniqueness
     const seenIds = new Set();
-
+    let uniqueRecommendations = [];
+    
     recommendations
       .sort((a, b) => b.score - a.score)
       .forEach(item => {
-        const productId = item.product._id.toString();
-        if (!seenIds.has(productId) && !purchasedProductIds.has(productId)) {
-          seenIds.add(productId);
+        const id = item.product._id.toString();
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
           uniqueRecommendations.push(item.product);
         }
       });
 
+    // FILLER: If we don't have enough, pick random popular products
     if (uniqueRecommendations.length < limit) {
-      const additionalProducts = await Product.find({
-        _id: { $nin: [...seenIds].map(id => id) }
-      })
-        .sort({ purchaseCount: -1 })
-        .limit(limit - uniqueRecommendations.length);
-
-      uniqueRecommendations.push(...additionalProducts);
+      const remaining = limit - uniqueRecommendations.length;
+      const filler = await Product.aggregate([
+        { $match: { _id: { $nin: Array.from(seenIds).map(id => new mongoose.Types.ObjectId(id)) } } },
+        { $sample: { size: remaining } } 
+      ]);
+      uniqueRecommendations.push(...filler);
     }
 
-    res.json({
-      products: uniqueRecommendations.slice(0, limit),
-      strategy,
-      userTags: user.tags
-    });
-
+    res.json({ products: uniqueRecommendations.slice(0, limit), strategy });
   } catch (error) {
-    console.error('Recommendation error:', error);
-    res.status(500).json({ message: 'Error generating recommendations' });
+    res.status(500).json({ message: 'Error' });
   }
 };
 
@@ -180,7 +124,7 @@ export const batchTrackInteractions = async (req, res) => {
   try {
     const { interactions } = req.body;
     const userId = req.user?._id;
-    console.log(userId)
+    // console.log(userId)
 
     if (!interactions || !Array.isArray(interactions)) {
       return res.status(400).json({ success: false, message: 'Invalid data' });
@@ -199,8 +143,8 @@ export const batchTrackInteractions = async (req, res) => {
 
       // 2. UPDATE USER TAGS (The part that is currently failing)
       if (userId && product.tags && product.tags.length > 0) {
-        console.log(`Updating tags for User: ${userId} from Product: ${product.name}`);
-
+        // console.log(`Updating tags for User: ${userId} from Product: ${product.name}`);
+// 
         for (const tagName of product.tags) {
           // Check if this specific tag already exists in the user's array
           const userHasTag = await User.findOne({ 

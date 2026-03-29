@@ -5,49 +5,52 @@ export const WishlistContext = createContext(null);
 
 export const WishlistProvider = ({ children }) => {
     const [wishlistItems, setWishlistItems] = useState(() => {
-        const saved = localStorage.getItem('wishlistItems');
+        const saved = localStorage.getItem("wishlistItems");
         return saved ? JSON.parse(saved) : [];
     });
 
     useEffect(() => {
-        localStorage.setItem('wishlistItems', JSON.stringify(wishlistItems));
+        localStorage.setItem("wishlistItems", JSON.stringify(wishlistItems));
     }, [wishlistItems]);
 
    const addToWishlist = useCallback((product) => {
-    // 1. Check if it's already there BEFORE calling state
-    setWishlistItems((prev) => {
-        const isExisting = prev.find(item => item._id === product._id);
+    const isExisting = wishlistItems.find(item => item._id === product._id);
 
+    if (isExisting) {
+        toast("Already in wishlist", { icon: "ℹ️" });
+        return;
+    }
 
-        if (isExisting) {
-            toast("Already in wishlist", { icon: 'ℹ️' });
-            return prev;
-        }
+    setWishlistItems((prev) => [...prev, product]);
 
-        // 2. Trigger the toast OUTSIDE the logic but inside the function scope
-        toast.success(`${product.title || 'Item'} added to wishlist!`, {
-            position: "bottom-center"
-        });
-
-        return [...prev, product];
+    toast.success(`${product.title || 'Item'} added to wishlist!`, {
+        position: "bottom-center"
     });
-}, []);
+
+}, [wishlistItems]);
 
     const removeFromWishlist = useCallback((productId) => {
-        setWishlistItems((prev) => prev.filter(item => item._id !== productId)
-);
-        toast.error("Removed from wishlist");
+        setWishlistItems((prev) => {
+            const updated = prev.filter(item => item._id !== productId);
+
+            if (updated.length !== prev.length) {
+                toast.error("Removed from wishlist");
+            }
+
+            return updated;
+        });
     }, []);
 
     const clearWishlist = useCallback(() => {
         setWishlistItems([]);
+        toast("Wishlist cleared");
     }, []);
 
     const value = useMemo(() => ({
         wishlistItems,
         addToWishlist,
         removeFromWishlist,
-        clearWishlist
+        clearWishlist,
     }), [wishlistItems, addToWishlist, removeFromWishlist, clearWishlist]);
 
     return (

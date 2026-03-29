@@ -55,9 +55,7 @@ export const RecommendationProvider = ({ children }) => {
         }
       );
       
-      // Clear after successful sync
       localStorage.removeItem('pending_interactions');
-      // console.log('✅ Interactions synced');
       
     } catch (error) {
       console.error('Error syncing interactions:', error);

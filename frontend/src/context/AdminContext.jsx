@@ -17,7 +17,7 @@ export const AdminProvider = ({ children }) => {
     Authorization: `Bearer ${token}`,
   };
 
-  // ==================== USER MANAGEMENT ====================
+  // user management
 
   // Fetch All Users
   const fetchUsers = useCallback(async () => {

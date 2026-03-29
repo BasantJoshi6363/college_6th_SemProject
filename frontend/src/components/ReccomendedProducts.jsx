@@ -29,7 +29,7 @@ const RecommendedProducts = () => {
         // Fetch fresh data
         const { data } = await axios.get(
           `/api/recommendations?strategy=${strategy}&limit=12`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+          { headers: { Authorization: `Bearer ${localStorage.getItem('google-token')}` } }
         );
         
         setProducts(data.products);

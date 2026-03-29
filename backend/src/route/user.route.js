@@ -8,7 +8,10 @@ import {
   getUserById,
   updateUserById,
   updateUserRole,
-  deleteUser
+  deleteUser,
+  // Import the new controllers we created
+  forgotPassword,
+  resetPassword 
 } from "../controller/user.controller.js";
 import protect, { isAdmin } from "../middleware/auth.middleware.js";
 
@@ -18,6 +21,10 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/google", googleLogin);
+
+// New Password Recovery Routes
+router.post("/forgot-password", forgotPassword); // Sends the email
+router.put("/reset-password/:token", resetPassword); // Validates token and updates password
 
 // ==================== PROTECTED ROUTES (User) ====================
 router.put("/update", protect, updateUser); // Update own profile

@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema(
     temporaryAddress: String,
     phoneNumber: String,
     profilePicture: String,
+    resetPasswordToken: String,
+  resetPasswordExpires: Date,
     tags: [{
       name: { type: String },
       count: { type: Number, default: 1 }

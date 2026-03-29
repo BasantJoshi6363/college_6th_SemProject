@@ -7,31 +7,27 @@ const RecommendedProduct = ({ excludeIds = [], limit = 4 }) => {
   const [recommendedItems, setRecommendedItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      if (!excludeIds || excludeIds.length === 0) {
-        setRecommendedItems([]);
-        setLoading(false);
-        return;
-      }
-
+  // Inside RecommendedProducts.js useEffect
+useEffect(() => {
+  const fetchRecommendations = async () => {
+    try {
       setLoading(true);
-
-      try {
-        await syncInteractions();
-        const recommendations = await getPersonalizedRecommendations(excludeIds, limit);
-        setRecommendedItems(recommendations || []);
-      } catch (error) {
-        console.error("Recommendation error:", error);
-        setRecommendedItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRecommendations();
-  }, [excludeIds, limit, syncInteractions, getPersonalizedRecommendations]);
-
+      // OPTION: Remove the localStorage cache logic entirely 
+      // to see immediate changes after browsing products.
+      
+      const { data } = await axios.get(
+        `${baseUrl}/recommendations?limit=12`, // Use the baseUrl from env
+        { headers: { Authorization: `Bearer ${localStorage.getItem('google-token')}` } }
+      );
+      
+      setProducts(data.products);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+    }
+  };
+  fetchRecommendations();
+}, []); // Empty dependency or [user] to refresh on login
   if (loading) return <div className="text-center py-10 text-gray-500">Loading recommendations...</div>;
 
   if (recommendedItems.length === 0)

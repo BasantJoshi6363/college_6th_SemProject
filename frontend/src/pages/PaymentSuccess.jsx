@@ -26,13 +26,13 @@ const PaymentSuccess = () => {
       }
 
       try {
-        console.log("📡 Calling verification endpoint...");
+        // console.log("📡 Calling verification endpoint...");
         
         const { data } = await axios.get(
           `http://localhost:5000/api/orders/verify-payment?data=${encodedData}`
         );
         
-        console.log("✅ Verification response:", data);
+        // console.log("✅ Verification response:", data);
         
         if (data.success) {
           setStatus('success');
